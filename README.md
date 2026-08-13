@@ -18,11 +18,11 @@ npx react-native run-android
 
 Requires a physical Android device with USB debugging enabled. BLE does not work on emulators.
 
-## Demo script (two phones)
+## Usage (two phones)
 
-1. **Galaxy S22 (Tool Mode)** — Open app → **Tool Mode** → **Start Advertising**
+1. **Phone 1 (Tool Mode)** — Open app → **Tool Mode** → **Start Advertising**
    - Device advertises as `ServiceTool-001`
-2. **Pixel 9 (Client Mode)** — Open app → **Client Mode** → **Scan for Tools** → tap **Connect**
+2. **Phone 2 (Client Mode)** — Open app → **Client Mode** → **Scan for Tools** → tap **Connect**
    - Live telemetry (temperature, RPM) updates every second
    - Firmware badge shows `1.2.0 — Compatible`
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
@@ -62,7 +62,7 @@ src/
   utils/         base64, version compare
 ```
 
-## RN ecosystem feasibility (client summary)
+## RN ecosystem feasibility
 
 | Transport | RN support | Cross-platform | This PoC |
 |-----------|-----------|----------------|----------|
@@ -75,7 +75,6 @@ src/
 
 - **NFC bootstrap** — NTAG213 sticker with NDEF pairing payload
 - **WiFi Direct** — `react-native-wifi-p2p` (Android) / Multipeer (iOS)
-- **iOS build** — requires Xcode + `pod install`
 
 ## Permissions
 
