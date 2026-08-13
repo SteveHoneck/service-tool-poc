@@ -131,11 +131,24 @@ export default function ClientScreen({onBack}: Props) {
             </Text>
             {telemetry ? (
               <>
-                <Text style={[styles.telemetryValue, isDark && styles.textLight]}>
-                  {telemetry.temp.toFixed(1)} °C
-                </Text>
+                <View style={styles.telemetryMetricsRow}>
+                  <Text
+                    style={[styles.telemetryValue, isDark && styles.textLight]}>
+                    {telemetry.temp.toFixed(1)} °C
+                  </Text>
+                  <View
+                    style={[
+                      styles.telemetrySeparator,
+                      isDark && styles.telemetrySeparatorDark,
+                    ]}
+                  />
+                  <Text
+                    style={[styles.telemetryValue, isDark && styles.textLight]}>
+                    {telemetry.rpm} RPM
+                  </Text>
+                </View>
                 <Text style={[styles.telemetryDetail, isDark && styles.textMuted]}>
-                  RPM: {telemetry.rpm} · Status: {telemetry.status}
+                  Status: {telemetry.status}
                 </Text>
               </>
             ) : (
@@ -312,7 +325,21 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: '#111827',
+  },
+  telemetryMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
+    gap: 16,
+  },
+  telemetrySeparator: {
+    width: 1,
+    alignSelf: 'stretch',
+    minHeight: 32,
+    backgroundColor: '#E5E7EB',
+  },
+  telemetrySeparatorDark: {
+    backgroundColor: '#374151',
   },
   telemetryDetail: {
     fontSize: 15,
