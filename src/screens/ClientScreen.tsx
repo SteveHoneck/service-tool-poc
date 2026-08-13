@@ -11,6 +11,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useBleClient} from '../ble/useBleClient';
 import {ConnectionState} from '../types';
+import {rssiToSignalStrength} from '../utils/signalStrength';
 
 interface Props {
   onBack: () => void;
@@ -194,7 +195,8 @@ export default function ClientScreen({onBack}: Props) {
                   {item.name ?? 'Unknown'}
                 </Text>
                 <Text style={[styles.hint, isDark && styles.textMuted]}>
-                  RSSI: {item.rssi ?? '—'}
+                  Signal Strength:{' '}
+                  {rssiToSignalStrength(item.rssi) ?? '—'}
                 </Text>
               </View>
               <Text style={styles.connectLink}>Connect</Text>
