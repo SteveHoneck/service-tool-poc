@@ -1,45 +1,33 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useState} from 'react';
+import {StatusBar, useColorScheme} from 'react-native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import ClientScreen from './src/screens/ClientScreen';
+import ModeSelectScreen from './src/screens/ModeSelectScreen';
+import ToolScreen from './src/screens/ToolScreen';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+type Screen = 'mode-select' | 'client' | 'tool';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
+  const [screen, setScreen] = useState<Screen>('mode-select');
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      {screen === 'mode-select' && (
+        <ModeSelectScreen
+          onSelectClient={() => setScreen('client')}
+          onSelectTool={() => setScreen('tool')}
+        />
+      )}
+      {screen === 'client' && (
+        <ClientScreen onBack={() => setScreen('mode-select')} />
+      )}
+      {screen === 'tool' && (
+        <ToolScreen onBack={() => setScreen('mode-select')} />
+      )}
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
