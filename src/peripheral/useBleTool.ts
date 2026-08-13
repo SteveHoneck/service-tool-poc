@@ -36,6 +36,7 @@ import {
   TELEMETRY_INTERVAL_MS,
   TOOL_DEVICE_NAME,
   TOOL_SERVICE_UUID_FULL,
+  ADVERTISING_START_TIMEOUT_MS,
   uuidMatches,
 } from '../ble/constants';
 import {requestToolPermissions} from '../ble/permissions';
@@ -44,8 +45,6 @@ import {TelemetryPayload} from '../types';
 import {encodeTelemetryBase64} from '../utils/telemetry';
 
 type ToolState = 'idle' | 'starting' | 'advertising' | 'connected' | 'error';
-
-const ADVERTISING_TIMEOUT_MS = 15000;
 
 function generateTelemetry(): TelemetryPayload {
   return {
@@ -61,6 +60,7 @@ export function useBleTool() {
   const streamingRef = useRef(false);
   const startStreamingRef = useRef<() => void>(() => {});
   const stopStreamingRef = useRef<() => void>(() => {});
+  const advertisingStartedRef = useRef(false);
   const [toolState, setToolState] = useState<ToolState>('idle');
   const [connectedCentrals, setConnectedCentrals] = useState(0);
   const [lastTelemetry, setLastTelemetry] = useState<TelemetryPayload | null>(
@@ -134,6 +134,7 @@ export function useBleTool() {
   }, []);
 
   const resetAdvertisingSession = useCallback(async () => {
+    advertisingStartedRef.current = false;
     stopStreamingRef.current();
     stopAdvertising();
     removeAllServices();
@@ -179,6 +180,7 @@ export function useBleTool() {
 
     const advertisingSub = onDidStartAdvertising((event: EventDidStartAdvertising) => {
       if (event.success) {
+        advertisingStartedRef.current = true;
         setToolState(current => (current === 'starting' ? 'advertising' : current));
         setErrorMessage(null);
       } else if (event.error) {
@@ -199,6 +201,7 @@ export function useBleTool() {
   const startTool = useCallback(async () => {
     setErrorMessage(null);
     setToolState('starting');
+    advertisingStartedRef.current = false;
 
     const granted = await requestToolPermissions();
     if (!granted) {
@@ -224,14 +227,19 @@ export function useBleTool() {
           localName: TOOL_DEVICE_NAME,
           serviceUUIDs: [TOOL_SERVICE_UUID_FULL],
         }),
-        delay(ADVERTISING_TIMEOUT_MS).then(() => {
+        delay(ADVERTISING_START_TIMEOUT_MS).then(() => {
+          if (advertisingStartedRef.current) {
+            return;
+          }
           throw new Error(
             'Advertising timed out — toggle Bluetooth off/on, then retry',
           );
         }),
       ]);
 
-      setToolState('advertising');
+      if (!advertisingStartedRef.current) {
+        setToolState('advertising');
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to start advertising';

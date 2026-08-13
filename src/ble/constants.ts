@@ -23,6 +23,9 @@ export const RECONNECT_SCAN_TIMEOUT_MS = 12000;
 /** Requested ATT MTU — default BLE packets truncate JSON telemetry (~20 byte limit). */
 export const BLE_REQUESTED_MTU = 512;
 
+/** Max wait for startAdvertising() before showing a timeout error. */
+export const ADVERTISING_START_TIMEOUT_MS = 120_000;
+
 /** Expand a 16-bit (or 32-bit) UUID to the standard 128-bit BLE base UUID. */
 export function toFullUuid(uuid: string): string {
   const normalized = uuid.replace(/-/g, '').toUpperCase();
