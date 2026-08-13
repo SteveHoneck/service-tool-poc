@@ -78,6 +78,7 @@ export default function ClientScreen({onBack}: Props) {
   const isConnected = ['connected', 'streaming', 'reconnecting'].includes(
     connectionState,
   );
+  const signalStrength = rssiToSignalStrength(connectedDevice?.rssi ?? null);
 
   return (
     <SafeAreaView
@@ -147,12 +148,22 @@ export default function ClientScreen({onBack}: Props) {
       )}
 
       {connectionState === 'streaming' && (
-        <View style={[styles.statusCard, isDark && styles.cardDark]}>
+        <View
+          style={[
+            styles.statusCard,
+            isDark && styles.cardDark,
+            signalStrength === 'Weak' &&
+              (isDark ? styles.signalCardWeakDark : styles.signalCardWeak),
+            signalStrength === 'Very weak' &&
+              (isDark
+                ? styles.signalCardVeryWeakDark
+                : styles.signalCardVeryWeak),
+          ]}>
           <Text style={[styles.statusLabel, isDark && styles.textMuted]}>
             Signal Strength
           </Text>
           <Text style={[styles.statusValue, isDark && styles.textLight]}>
-            {rssiToSignalStrength(connectedDevice?.rssi ?? null) ?? '—'}
+            {signalStrength ?? '—'}
           </Text>
         </View>
       )}
@@ -263,6 +274,22 @@ const styles = StyleSheet.create({
   cardDark: {
     backgroundColor: '#1F2937',
     borderColor: '#374151',
+  },
+  signalCardWeak: {
+    backgroundColor: '#FEF9C3',
+    borderColor: '#FDE047',
+  },
+  signalCardWeakDark: {
+    backgroundColor: '#422006',
+    borderColor: '#854D0E',
+  },
+  signalCardVeryWeak: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FCA5A5',
+  },
+  signalCardVeryWeakDark: {
+    backgroundColor: '#450A0A',
+    borderColor: '#991B1B',
   },
   statusLabel: {
     fontSize: 13,
