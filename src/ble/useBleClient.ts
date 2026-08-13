@@ -11,12 +11,14 @@ import {
   RECONNECT_SCAN_TIMEOUT_MS,
   TELEMETRY_CHAR_UUID,
   TELEMETRY_CHAR_UUID_FULL,
+  TELEMETRY_INTERVAL_MS,
   TOOL_DEVICE_NAME_PREFIX,
   TOOL_SERVICE_UUID,
   TOOL_SERVICE_UUID_FULL,
   uuidMatches,
 } from '../ble/constants';
 import {requestClientPermissions} from '../ble/permissions';
+import {startStreamingRssiPolling} from '../ble/rssiPolling';
 import {scanForToolDevice} from '../ble/scan';
 import {withReconnect} from '../connection/reconnect';
 import {
@@ -97,6 +99,24 @@ export function useBleClient() {
       manager.destroy();
     };
   }, [cleanupConnection]);
+
+  useEffect(() => {
+    if (connectionState !== 'streaming') {
+      return;
+    }
+
+    const device = deviceRef.current;
+    if (!device) {
+      return;
+    }
+
+    return startStreamingRssiPolling(
+      device,
+      TELEMETRY_INTERVAL_MS,
+      rssi =>
+        setConnectedDevice(prev => (prev ? {...prev, rssi} : null)),
+    );
+  }, [connectionState]);
 
   const readFirmware = useCallback(async (device: Device) => {
     try {

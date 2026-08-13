@@ -146,6 +146,17 @@ export default function ClientScreen({onBack}: Props) {
         </>
       )}
 
+      {connectionState === 'streaming' && (
+        <View style={[styles.statusCard, isDark && styles.cardDark]}>
+          <Text style={[styles.statusLabel, isDark && styles.textMuted]}>
+            Signal Strength
+          </Text>
+          <Text style={[styles.statusValue, isDark && styles.textLight]}>
+            {rssiToSignalStrength(connectedDevice?.rssi ?? null) ?? '—'}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.actions}>
         {!isConnected && (
           <>
