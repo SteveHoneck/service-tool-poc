@@ -27,7 +27,11 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
    - Firmware badge shows `1.2.0 — Compatible`
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count
-   - Toggle Bluetooth back on → auto-reconnects and resumes streaming
+   - Toggle Bluetooth back on, restart App in Tool mode, **Start Advertising** → auto-reconnects and resumes streaming
+
+   ---OR - if you feel like going for a walk---
+    - Walk away from Tool device until Client shows **Signal Strength: Very Weak…** and disconnects, then walk back to Tool device → auto-reconnects and resumes streaming
+     
 
 ## Architecture
 
