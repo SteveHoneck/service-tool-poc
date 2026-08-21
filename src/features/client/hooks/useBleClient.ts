@@ -1,28 +1,13 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {BleManager, Device, Subscription} from 'react-native-ble-plx';
-import {delay, withReconnect} from '../../../domain/connection/reconnect';
-import {uuidMatches} from '../../../domain/device/uuid';
+import {withReconnect} from '../../../domain/connection/reconnect';
 import {isVersionCompatible} from '../../../domain/device/version';
-import {decodeBase64ToString} from '../../../domain/telemetry/base64';
-import {parseTelemetryBase64} from '../../../domain/telemetry/parse';
+import {BleCentralService} from '../../../services/ble/BleCentralService';
 import {
-  BLE_REQUESTED_MTU,
-  DIS_SERVICE_UUID,
-  DIS_SERVICE_UUID_FULL,
-  FIRMWARE_CHAR_UUID,
-  FIRMWARE_CHAR_UUID_FULL,
   MIN_COMPATIBLE_FIRMWARE,
   RECONNECT_SCAN_TIMEOUT_MS,
-  TELEMETRY_CHAR_UUID,
-  TELEMETRY_CHAR_UUID_FULL,
   TELEMETRY_INTERVAL_MS,
-  TOOL_DEVICE_NAME_PREFIX,
-  TOOL_SERVICE_UUID,
-  TOOL_SERVICE_UUID_FULL,
 } from '../../../services/ble/constants';
 import {requestClientPermissions} from '../../../services/ble/permissions';
-import {startStreamingRssiPolling} from '../../../services/ble/rssiPolling';
-import {scanForToolDevice} from '../../../services/ble/scan';
 import {
   getLastDeviceId,
   setLastDeviceId,
@@ -34,28 +19,8 @@ import {
   TelemetryPayload,
 } from '../../../types';
 
-async function resolveServiceUuid(device: Device): Promise<string> {
-  const services = await device.services();
-  const match = services.find(s => uuidMatches(s.uuid, TOOL_SERVICE_UUID));
-  return match?.uuid ?? TOOL_SERVICE_UUID_FULL;
-}
-
-async function resolveCharacteristicUuid(
-  device: Device,
-  serviceUuid: string,
-  shortUuid: string,
-  fullUuid: string,
-): Promise<string> {
-  const characteristics = await device.characteristicsForService(serviceUuid);
-  const match = characteristics.find(c => uuidMatches(c.uuid, shortUuid));
-  return match?.uuid ?? fullUuid;
-}
-
 export function useBleClient() {
-  const managerRef = useRef(new BleManager());
-  const deviceRef = useRef<Device | null>(null);
-  const monitorSubRef = useRef<Subscription | null>(null);
-  const disconnectSubRef = useRef<Subscription | null>(null);
+  const serviceRef = useRef(new BleCentralService());
   const reconnectingRef = useRef(false);
   const targetDeviceIdRef = useRef<string | null>(null);
 
@@ -73,31 +38,19 @@ export function useBleClient() {
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
 
   const cleanupSubscriptions = useCallback(() => {
-    monitorSubRef.current?.remove();
-    monitorSubRef.current = null;
-    disconnectSubRef.current?.remove();
-    disconnectSubRef.current = null;
+    serviceRef.current.removeSubscriptions();
   }, []);
 
   const cleanupConnection = useCallback(async () => {
-    cleanupSubscriptions();
-    const device = deviceRef.current;
-    deviceRef.current = null;
-    if (device) {
-      try {
-        await device.cancelConnection();
-      } catch {
-        // Device may already be disconnected.
-      }
-    }
-  }, [cleanupSubscriptions]);
+    await serviceRef.current.disconnect();
+  }, []);
 
   useEffect(() => {
-    const manager = managerRef.current;
+    const service = serviceRef.current;
     return () => {
       reconnectingRef.current = false;
-      cleanupConnection();
-      manager.destroy();
+      void cleanupConnection();
+      service.destroy();
     };
   }, [cleanupConnection]);
 
@@ -106,39 +59,20 @@ export function useBleClient() {
       return;
     }
 
-    const device = deviceRef.current;
-    if (!device) {
-      return;
-    }
-
-    return startStreamingRssiPolling(
-      device,
-      TELEMETRY_INTERVAL_MS,
-      rssi =>
-        setConnectedDevice(prev => (prev ? {...prev, rssi} : null)),
+    return serviceRef.current.startRssiPolling(TELEMETRY_INTERVAL_MS, rssi =>
+      setConnectedDevice(prev => (prev ? {...prev, rssi} : null)),
     );
   }, [connectionState]);
 
-  const readFirmware = useCallback(async (device: Device) => {
+  const applyFirmwareVersion = useCallback(async () => {
     try {
-      const services = await device.services();
-      const disService =
-        services.find(s => uuidMatches(s.uuid, DIS_SERVICE_UUID))?.uuid ??
-        DIS_SERVICE_UUID_FULL;
-      const firmwareChar = await resolveCharacteristicUuid(
-        device,
-        disService,
-        FIRMWARE_CHAR_UUID,
-        FIRMWARE_CHAR_UUID_FULL,
-      );
-      const characteristic = await device.readCharacteristicForService(
-        disService,
-        firmwareChar,
-      );
-      if (!characteristic.value) {
+      const version = await serviceRef.current.readFirmwareVersion();
+      if (!version) {
+        setFirmwareVersion(null);
+        setFirmwareCompatibility('unknown');
         return;
       }
-      const version = decodeBase64ToString(characteristic.value).trim();
+
       setFirmwareVersion(version);
       setFirmwareCompatibility(
         isVersionCompatible(version, MIN_COMPATIBLE_FIRMWARE)
@@ -151,40 +85,14 @@ export function useBleClient() {
     }
   }, []);
 
-  const startMonitoring = useCallback(async (device: Device) => {
-    const toolService = await resolveServiceUuid(device);
-    const telemetryChar = await resolveCharacteristicUuid(
-      device,
-      toolService,
-      TELEMETRY_CHAR_UUID,
-      TELEMETRY_CHAR_UUID_FULL,
-    );
-
-    monitorSubRef.current?.remove();
-    monitorSubRef.current = device.monitorCharacteristicForService(
-      toolService,
-      telemetryChar,
-      (error, characteristic) => {
-        if (error) {
-          setErrorMessage(error.message);
-          return;
-        }
-        if (!characteristic?.value) {
-          return;
-        }
-        try {
-          const payload = parseTelemetryBase64(characteristic.value);
-          setTelemetry(payload);
-          setConnectionState('streaming');
-          setErrorMessage(null);
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : 'Failed to parse telemetry payload';
-          setErrorMessage(message);
-        }
+  const startMonitoring = useCallback(() => {
+    serviceRef.current.monitorTelemetry(
+      payload => {
+        setTelemetry(payload);
+        setConnectionState('streaming');
+        setErrorMessage(null);
       },
+      message => setErrorMessage(message),
     );
   }, []);
 
@@ -193,36 +101,18 @@ export function useBleClient() {
       setErrorMessage(null);
       setConnectionState(isReconnect ? 'reconnecting' : 'connecting');
 
-      const manager = managerRef.current;
-      await manager.stopDeviceScan();
-
-      const device = await manager.connectToDevice(deviceId, {
-        autoConnect: false,
-      });
-      deviceRef.current = device;
+      const service = serviceRef.current;
+      const scanned = await service.connect(deviceId);
       targetDeviceIdRef.current = deviceId;
 
-      try {
-        await device.requestMTU(BLE_REQUESTED_MTU);
-      } catch {
-        // Continue with default MTU if negotiation fails.
-      }
+      await applyFirmwareVersion();
+      startMonitoring();
 
-      await device.discoverAllServicesAndCharacteristics();
-      await readFirmware(device);
-      await startMonitoring(device);
-
-      const scanned: ScannedDevice = {
-        id: device.id,
-        name: device.name,
-        rssi: device.rssi,
-      };
       setConnectedDevice(scanned);
       setConnectionState('connected');
       await setLastDeviceId(deviceId);
 
-      disconnectSubRef.current?.remove();
-      disconnectSubRef.current = device.onDisconnected(async () => {
+      service.onDisconnected(async () => {
         if (reconnectingRef.current) {
           return;
         }
@@ -234,10 +124,9 @@ export function useBleClient() {
           await withReconnect(
             async () => {
               cleanupSubscriptions();
-              deviceRef.current = null;
-              await managerRef.current.stopDeviceScan().catch(() => {});
-              const visibleDeviceId = await scanForToolDevice(
-                managerRef.current,
+              service.clearConnectedDevice();
+              await service.stopScan();
+              const visibleDeviceId = await service.findToolDevice(
                 deviceId,
                 RECONNECT_SCAN_TIMEOUT_MS,
               );
@@ -256,7 +145,7 @@ export function useBleClient() {
         }
       });
     },
-    [cleanupSubscriptions, readFirmware, startMonitoring],
+    [applyFirmwareVersion, cleanupSubscriptions, startMonitoring],
   );
 
   const startScan = useCallback(async () => {
@@ -271,30 +160,22 @@ export function useBleClient() {
     setErrorMessage(null);
     setConnectionState('scanning');
 
-    const manager = managerRef.current;
     const seen = new Map<string, ScannedDevice>();
 
-    manager.startDeviceScan(null, {allowDuplicates: false}, (error, device) => {
-      if (error) {
-        setErrorMessage(error.message);
+    serviceRef.current.startScan(
+      device => {
+        seen.set(device.id, device);
+        setDevices(Array.from(seen.values()));
+      },
+      message => {
+        setErrorMessage(message);
         setConnectionState('error');
-        return;
-      }
-      if (!device?.name?.startsWith(TOOL_DEVICE_NAME_PREFIX)) {
-        return;
-      }
-
-      seen.set(device.id, {
-        id: device.id,
-        name: device.name,
-        rssi: device.rssi,
-      });
-      setDevices(Array.from(seen.values()));
-    });
+      },
+    );
   }, []);
 
   const stopScan = useCallback(async () => {
-    await managerRef.current.stopDeviceScan();
+    await serviceRef.current.stopScan();
     if (connectionState === 'scanning') {
       setConnectionState('idle');
     }
@@ -338,9 +219,9 @@ export function useBleClient() {
     setConnectionState('reconnecting');
 
     try {
-      await managerRef.current.stopDeviceScan().catch(() => {});
-      const visibleDeviceId = await scanForToolDevice(
-        managerRef.current,
+      const service = serviceRef.current;
+      await service.stopScan();
+      const visibleDeviceId = await service.findToolDevice(
         lastId,
         RECONNECT_SCAN_TIMEOUT_MS,
       );

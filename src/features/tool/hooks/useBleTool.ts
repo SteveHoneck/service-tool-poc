@@ -1,46 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {
-  ATTError,
-  CharacteristicPermissions,
-  CharacteristicProperties,
-  ManagerState,
-  addCharacteristicToService,
-  addCharacteristicToServiceBase64,
-  addService,
-  decodeBase64,
-  getState,
-  onDidReceiveReadRequest,
-  onDidReceiveWriteRequests,
-  onDidStartAdvertising,
-  onDidSubscribeToCharacteristic,
-  onDidUnsubscribeFromCharacteristic,
-  removeAllServices,
-  respondToRequest,
-  setName,
-  startAdvertising,
-  stopAdvertising,
-  updateValueBase64,
-  type EventDidReceiveReadRequest,
-  type EventDidReceiveWriteRequests,
-  type EventDidStartAdvertising,
-} from 'react-native-ble-peripheral-manager';
-import {delay} from '../../../domain/connection/reconnect';
-import {uuidMatches} from '../../../domain/device/uuid';
 import {encodeTelemetryBase64} from '../../../domain/telemetry/serialize';
-import {
-  ADVERTISING_START_TIMEOUT_MS,
-  COMMAND_CHAR_UUID_FULL,
-  DIS_SERVICE_UUID,
-  DIS_SERVICE_UUID_FULL,
-  FIRMWARE_CHAR_UUID,
-  FIRMWARE_CHAR_UUID_FULL,
-  FIRMWARE_VERSION,
-  STATUS_CHAR_UUID_FULL,
-  TELEMETRY_CHAR_UUID_FULL,
-  TELEMETRY_INTERVAL_MS,
-  TOOL_DEVICE_NAME,
-  TOOL_SERVICE_UUID_FULL,
-} from '../../../services/ble/constants';
+import {BlePeripheralService} from '../../../services/ble/BlePeripheralService';
+import {TELEMETRY_INTERVAL_MS} from '../../../services/ble/constants';
 import {requestToolPermissions} from '../../../services/ble/permissions';
 import {TelemetryPayload} from '../../../types';
 
@@ -56,6 +17,7 @@ function generateTelemetry(): TelemetryPayload {
 }
 
 export function useBleTool() {
+  const serviceRef = useRef(new BlePeripheralService());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamingRef = useRef(false);
   const startStreamingRef = useRef<() => void>(() => {});
@@ -79,11 +41,7 @@ export function useBleTool() {
   const pushTelemetry = useCallback(async () => {
     const payload = generateTelemetry();
     setLastTelemetry(payload);
-    await updateValueBase64(
-      TOOL_SERVICE_UUID_FULL,
-      TELEMETRY_CHAR_UUID_FULL,
-      encodeTelemetryBase64(payload),
-    );
+    await serviceRef.current.updateTelemetry(encodeTelemetryBase64(payload));
   }, []);
 
   const startStreaming = useCallback(() => {
@@ -99,103 +57,69 @@ export function useBleTool() {
   stopStreamingRef.current = stopStreaming;
 
   const setupGattProfile = useCallback(() => {
-    removeAllServices();
-
-    addService(TOOL_SERVICE_UUID_FULL, true);
-    addCharacteristicToServiceBase64(
-      TOOL_SERVICE_UUID_FULL,
-      TELEMETRY_CHAR_UUID_FULL,
-      CharacteristicProperties.Read | CharacteristicProperties.Notify,
-      CharacteristicPermissions.Readable,
+    serviceRef.current.setupGattProfile(
       encodeTelemetryBase64(generateTelemetry()),
-    );
-    addCharacteristicToService(
-      TOOL_SERVICE_UUID_FULL,
-      COMMAND_CHAR_UUID_FULL,
-      CharacteristicProperties.Write,
-      CharacteristicPermissions.Writeable,
-    );
-    addCharacteristicToService(
-      TOOL_SERVICE_UUID_FULL,
-      STATUS_CHAR_UUID_FULL,
-      CharacteristicProperties.Read,
-      CharacteristicPermissions.Readable,
-      'idle',
-    );
-
-    addService(DIS_SERVICE_UUID_FULL, true);
-    addCharacteristicToService(
-      DIS_SERVICE_UUID_FULL,
-      FIRMWARE_CHAR_UUID_FULL,
-      CharacteristicProperties.Read,
-      CharacteristicPermissions.Readable,
-      FIRMWARE_VERSION,
     );
   }, []);
 
   const resetAdvertisingSession = useCallback(async () => {
     advertisingStartedRef.current = false;
     stopStreamingRef.current();
-    stopAdvertising();
-    removeAllServices();
+    serviceRef.current.stopAdvertising();
+    await serviceRef.current.resetSession();
     setConnectedCentrals(0);
-    await delay(400);
   }, []);
 
   useEffect(() => {
-    const readSub = onDidReceiveReadRequest((event: EventDidReceiveReadRequest) => {
-      if (
-        uuidMatches(event.serviceUUID, DIS_SERVICE_UUID) &&
-        uuidMatches(event.characteristicUUID, FIRMWARE_CHAR_UUID)
-      ) {
-        respondToRequest(event.requestId, ATTError.Success, FIRMWARE_VERSION);
-        return;
-      }
-      respondToRequest(event.requestId, ATTError.Success);
-    });
+    const service = serviceRef.current;
 
-    const writeSub = onDidReceiveWriteRequests((event: EventDidReceiveWriteRequests) => {
-      event.requests.forEach(req => {
-        const command = decodeBase64(req.value).trim().toLowerCase();
-        if (command === 'start') {
-          startStreamingRef.current();
-        } else if (command === 'stop') {
-          stopStreamingRef.current();
+    return service.subscribeEvents({
+      onReadRequest: event => {
+        if (
+          service.isFirmwareReadRequest(
+            event.serviceUUID,
+            event.characteristicUUID,
+          )
+        ) {
+          service.handleFirmwareReadRequest(event.requestId);
+          return;
         }
-      });
-      respondToRequest(event.requestId, ATTError.Success);
+        service.respondSuccess(event.requestId);
+      },
+      onWriteRequests: event => {
+        event.requests.forEach(req => {
+          const command = service.decodeWriteCommand(req.value);
+          if (command === 'start') {
+            startStreamingRef.current();
+          } else if (command === 'stop') {
+            stopStreamingRef.current();
+          }
+        });
+        service.respondSuccess(event.requestId);
+      },
+      onSubscribe: () => {
+        setConnectedCentrals(prev => prev + 1);
+        setToolState('connected');
+        startStreamingRef.current();
+      },
+      onUnsubscribe: () => {
+        setConnectedCentrals(prev => Math.max(0, prev - 1));
+        stopStreamingRef.current();
+        setToolState('advertising');
+      },
+      onAdvertisingStarted: event => {
+        if (event.success) {
+          advertisingStartedRef.current = true;
+          setToolState(current =>
+            current === 'starting' ? 'advertising' : current,
+          );
+          setErrorMessage(null);
+        } else if (event.error) {
+          setErrorMessage(event.error);
+          setToolState('error');
+        }
+      },
     });
-
-    const subscribeSub = onDidSubscribeToCharacteristic(() => {
-      setConnectedCentrals(prev => prev + 1);
-      setToolState('connected');
-      startStreamingRef.current();
-    });
-
-    const unsubscribeSub = onDidUnsubscribeFromCharacteristic(() => {
-      setConnectedCentrals(prev => Math.max(0, prev - 1));
-      stopStreamingRef.current();
-      setToolState('advertising');
-    });
-
-    const advertisingSub = onDidStartAdvertising((event: EventDidStartAdvertising) => {
-      if (event.success) {
-        advertisingStartedRef.current = true;
-        setToolState(current => (current === 'starting' ? 'advertising' : current));
-        setErrorMessage(null);
-      } else if (event.error) {
-        setErrorMessage(event.error);
-        setToolState('error');
-      }
-    });
-
-    return () => {
-      readSub.remove();
-      writeSub.remove();
-      subscribeSub.remove();
-      unsubscribeSub.remove();
-      advertisingSub.remove();
-    };
   }, []);
 
   const startTool = useCallback(async () => {
@@ -210,8 +134,9 @@ export function useBleTool() {
       return;
     }
 
-    const state = await getState();
-    if (state !== ManagerState.PoweredOn) {
+    const service = serviceRef.current;
+    const state = await service.getBluetoothState();
+    if (!service.isPoweredOn(state)) {
       setErrorMessage('Bluetooth is not powered on');
       setToolState('error');
       return;
@@ -220,22 +145,11 @@ export function useBleTool() {
     try {
       await resetAdvertisingSession();
       setupGattProfile();
-      setName(TOOL_DEVICE_NAME);
+      service.setDeviceName();
 
-      await Promise.race([
-        startAdvertising({
-          localName: TOOL_DEVICE_NAME,
-          serviceUUIDs: [TOOL_SERVICE_UUID_FULL],
-        }),
-        delay(ADVERTISING_START_TIMEOUT_MS).then(() => {
-          if (advertisingStartedRef.current) {
-            return;
-          }
-          throw new Error(
-            'Advertising timed out — toggle Bluetooth off/on, then retry',
-          );
-        }),
-      ]);
+      await service.startAdvertising(
+        () => advertisingStartedRef.current,
+      );
 
       if (!advertisingStartedRef.current) {
         setToolState('advertising');
