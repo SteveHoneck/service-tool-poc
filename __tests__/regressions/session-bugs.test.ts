@@ -2,19 +2,18 @@
  * Regression tests for bugs encountered during the BLE PoC bring-up session.
  * Each describe block maps to a real failure observed on device.
  */
+import {toFullUuid, uuidMatches} from '../../src/domain/device/uuid';
+import {encodeStringToBase64} from '../../src/domain/telemetry/base64';
+import {parseTelemetryBase64} from '../../src/domain/telemetry/parse';
+import {
+  encodeTelemetryBase64,
+  serializeTelemetry,
+} from '../../src/domain/telemetry/serialize';
 import {
   TOOL_SERVICE_UUID,
   TOOL_SERVICE_UUID_FULL,
-  toFullUuid,
-  uuidMatches,
-} from '../../src/ble/constants';
-import {scanForToolDevice} from '../../src/ble/scan';
-import {
-  encodeTelemetryBase64,
-  parseTelemetryBase64,
-  serializeTelemetry,
-} from '../../src/utils/telemetry';
-import {encodeStringToBase64} from '../../src/utils/base64';
+} from '../../src/services/ble/constants';
+import {scanForToolDevice} from '../../src/services/ble/scan';
 import {BleManager} from 'react-native-ble-plx';
 
 describe('session bug regressions', () => {
