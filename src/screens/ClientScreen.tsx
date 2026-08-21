@@ -9,6 +9,7 @@ import {
   useColorScheme,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {MAX_RECONNECT_ATTEMPTS} from '../ble/constants';
 import {useBleClient} from '../ble/useBleClient';
 import {ConnectionState} from '../types';
 import {rssiToSignalStrength} from '../utils/signalStrength';
@@ -104,7 +105,7 @@ export default function ClientScreen({onBack}: Props) {
         </View>
         {connectionState === 'reconnecting' && reconnectAttempt > 0 && (
           <Text style={[styles.hint, isDark && styles.textMuted]}>
-            Attempt {reconnectAttempt} of 4
+            Attempt {reconnectAttempt} of {MAX_RECONNECT_ATTEMPTS}
           </Text>
         )}
         {connectedDevice && (
