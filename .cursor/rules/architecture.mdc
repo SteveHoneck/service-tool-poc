@@ -1,0 +1,56 @@
+---
+description: Layered feature-module architecture and import boundaries for ServiceToolPoC
+alwaysApply: true
+---
+
+# ServiceToolPoC architecture
+
+Read `docs/ARCHITECTURE.md` for full detail. Enforce these rules on every edit under `src/`.
+
+## Layers (top → bottom)
+
+- `features/*/screens|components` — Presentation (View): JSX/styles only
+- `features/*/hooks` — Application (ViewModel): orchestrates domain + services
+- `domain/` — pure business logic; no React or BLE imports
+- `services/` — infrastructure (BLE, storage, permissions); no JSX
+
+## Import rules
+
+```typescript
+// ❌ Screen importing BLE library
+import { BleManager } from 'react-native-ble-plx';  // in features/*/screens/
+
+// ❌ Domain importing React Native
+import { Platform } from 'react-native';  // in domain/
+
+// ❌ Cross-feature import
+import { useBleClient } from '../../client/hooks/useBleClient';  // in features/tool/
+
+// ✅ Screen uses its feature hook
+import { useBleClient } from '../hooks/useBleClient';
+
+// ✅ Hook uses service + domain
+import { BleCentralService } from '../../../services/ble/BleCentralService';
+import { parseTelemetryBase64 } from '../../../domain/telemetry/parse';
+```
+
+## Where new code goes
+
+| Change | Location |
+|--------|----------|
+| New screen or UI widget | `features/<feature>/screens` or `components` |
+| New screen state / BLE orchestration | `features/<feature>/hooks` |
+| Parse, validate, policy, math | `domain/` |
+| Library wrapper, scan, permissions | `services/` |
+| Shared TS interfaces | `types/` |
+
+## Hooks and screens
+
+- Hooks expose `{ state, actions }`; screens stay thin (layout + call actions).
+- No business logic in screens beyond display formatting.
+
+## Tests
+
+- `domain/` tests: no mocks.
+- `services/` tests: mock native BLE modules.
+- Mirror source paths under `__tests__/`.

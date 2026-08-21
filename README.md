@@ -35,18 +35,31 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
 
 ## Architecture
 
-Single app, two modes:
+Single app, two modes — implemented with **feature modules + layered MVVM** (not classic MVC):
 
 | Mode | Role | Library |
 |------|------|---------|
 | **Client** | BLE central — scan, connect, subscribe | `react-native-ble-plx` |
 | **Tool** | BLE peripheral — GATT server, notify stream | `react-native-ble-peripheral-manager` |
 
+### Code layers
+
+| Layer | Folder | Responsibility |
+|-------|--------|----------------|
+| **Presentation** | `features/*/screens`, `components` | UI, styles, display formatting |
+| **Application** | `features/*/hooks` | Screen state, orchestration |
+| **Domain** | `domain/` | Pure rules: telemetry parse, reconnect policy, signal math |
+| **Infrastructure** | `services/` | BLE adapters, permissions, storage |
+
+**Full specification:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+
+**Agent / editor rules:** [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc), [`.cursor/rules/ble-services.mdc`](.cursor/rules/ble-services.mdc)
+
 ## GATT profile
 
 ```
 Service FFF0 (vendor tool service)
-  ├─ FFF1  NOTIFY  telemetry JSON { temp, rpm, status, timestamp }
+  ├─ FFF1  NOTIFY  telemetry JSON { t, r, s }  (compact wire format)
   ├─ FFF2  WRITE   command (start/stop stream)
   └─ FFF3  READ    device status
 
@@ -56,14 +69,29 @@ Service 180A (Device Information)
 
 ## Project structure
 
+**Target layout** (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for migration map):
+
 ```
 src/
-  ble/           constants, permissions, useBleClient hook
-  peripheral/    useBleTool hook (GATT server)
-  connection/    reconnect backoff helper
-  screens/       ModeSelect, Client, Tool
-  types/         shared TypeScript types
-  utils/         base64, version compare
+  app/                    App shell, mode routing
+  features/
+    client/               Client Mode screens, hooks, components
+    tool/                 Tool Mode screens, hooks, components
+    mode-select/          Mode picker screen
+  domain/
+    telemetry/            Parse/serialize, wire format
+    connection/           Reconnect backoff policy
+    device/               UUID helpers, firmware compatibility
+    signals/              RSSI → strength, display math
+  services/
+    ble/                  Central/peripheral adapters, scan, constants
+    storage/              Last connected device persistence
+  types/                  Shared TypeScript interfaces
+
+__tests__/                Mirrors domain/, services/, features/
+docs/
+  ARCHITECTURE.md         Layer rules, dependencies, branch plan
+.cursor/rules/            Cursor agent enforcement rules
 ```
 
 ## RN ecosystem feasibility
@@ -85,3 +113,12 @@ src/
 **Android** (`AndroidManifest.xml`): `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, `BLUETOOTH_ADVERTISE`, `ACCESS_FINE_LOCATION` (API ≤ 30)
 
 **iOS** (`Info.plist`): `NSBluetoothAlwaysUsageDescription`, `NSBluetoothPeripheralUsageDescription`
+
+## Development
+
+```bash
+npm test                  # Jest — domain, services, regressions
+npm run lint
+```
+
+When adding or moving code, follow the layer rules in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). BLE library imports belong only in `services/ble/`.
