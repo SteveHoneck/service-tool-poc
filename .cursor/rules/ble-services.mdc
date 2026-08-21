@@ -1,0 +1,38 @@
+---
+description: BLE central/peripheral service patterns and GATT conventions
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# BLE service rules
+
+Applies when editing `src/`. Full context: `docs/ARCHITECTURE.md`.
+
+## Library boundaries
+
+- `react-native-ble-plx` → only in `services/ble/BleCentralService.ts` (and its tests).
+- `react-native-ble-peripheral-manager` → only in `services/ble/BlePeripheralService.ts` (and its tests).
+- Feature hooks call service classes; never import BLE libs directly.
+
+## GATT contract (`services/ble/constants.ts`)
+
+- Vendor service: `FFF0`; telemetry notify: `FFF1`; command write: `FFF2`.
+- Standard DIS: `180A` / firmware `2A26`.
+- Use **full 128-bit UUIDs** in native peripheral APIs (`toFullUuid()`).
+- Wire telemetry as compact JSON `{t,r,s}`; encode/decode in `domain/telemetry/`.
+
+## Encoding
+
+- Use `updateValueBase64` / `addCharacteristicToServiceBase64` for peripheral writes.
+- Do **not** pre-base64 strings passed to APIs that already call `btoa()` internally.
+
+## Connection / reconnect
+
+- After connect: `requestMTU(512)` → discover services → read firmware → subscribe notify.
+- Reconnect: scan for `ServiceTool-*` before connect; use domain reconnect policy.
+- Persist last device id via `services/storage/`, not inline AsyncStorage in hooks.
+
+## PoC constraints
+
+- Android-first; physical devices required (no emulator BLE).
+- Tool must re-advertise after host Bluetooth toggle; document in UI messages.
