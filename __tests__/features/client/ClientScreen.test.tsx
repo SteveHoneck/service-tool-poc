@@ -261,5 +261,92 @@ describe('ClientScreen', () => {
         'Record',
       );
     });
+
+    it('logs samples while recording and starts a new log after Stop', async () => {
+      streamingClient({
+        ppm: 100,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const user = userEvent.setup();
+
+      expect(screen.queryByTestId('recording-sample-count')).toBeNull();
+
+      await user.press(screen.getByTestId('record-session-button'));
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '1 sample',
+      );
+
+      streamingClient({
+        ppm: 180,
+        status: 'running',
+        timestamp: 2,
+      });
+      await rerender(<ClientScreen onBack={jest.fn()} />);
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '2 samples',
+      );
+
+      await user.press(screen.getByTestId('record-session-button'));
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Record',
+      );
+
+      streamingClient({
+        ppm: 220,
+        status: 'running',
+        timestamp: 3,
+      });
+      await rerender(<ClientScreen onBack={jest.fn()} />);
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '2 samples',
+      );
+
+      await user.press(screen.getByTestId('record-session-button'));
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '1 sample',
+      );
+    });
+
+    it('does not log while reconnecting and resumes the same log after stream returns', async () => {
+      streamingClient({
+        ppm: 100,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const user = userEvent.setup();
+      await user.press(screen.getByTestId('record-session-button'));
+
+      mockClient({
+        connectionState: 'reconnecting',
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      });
+      await rerender(<ClientScreen onBack={jest.fn()} />);
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Stop Recording',
+      );
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '1 sample',
+      );
+
+      streamingClient({
+        ppm: 80,
+        status: 'running',
+        timestamp: 2,
+      });
+      await rerender(<ClientScreen onBack={jest.fn()} />);
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '2 samples',
+      );
+    });
   });
 });

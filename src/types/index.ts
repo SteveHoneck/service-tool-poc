@@ -16,6 +16,11 @@ export interface TelemetryPayload {
   timestamp: number;
 }
 
+export interface PpmSample {
+  timestamp: number;
+  ppm: number;
+}
+
 export interface ScannedDevice {
   id: string;
   name: string | null;

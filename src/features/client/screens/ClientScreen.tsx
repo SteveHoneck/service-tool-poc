@@ -15,6 +15,7 @@ import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
 import {ConnectionState} from '../../../types';
 import {LivePpmLevelBar} from '../components/LivePpmLevelBar';
 import {useBleClient} from '../hooks/useBleClient';
+import {useRecordingSession} from '../hooks/useRecordingSession';
 
 interface Props {
   onBack: () => void;
@@ -84,18 +85,21 @@ export default function ClientScreen({onBack}: Props) {
   const signalStrength = rssiToSignalStrength(connectedDevice?.rssi ?? null);
   const ppm = telemetry?.ppm ?? null;
   const [maxPpm, setMaxPpm] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
   if (ppm === null && maxPpm !== 0) {
     setMaxPpm(0);
   } else if (ppm !== null && ppm > maxPpm) {
     setMaxPpm(nextMaxPpm(maxPpm, ppm));
   }
-  if (!isConnected && isRecording) {
-    setIsRecording(false);
-  }
   const canStartRecording =
     connectionState === 'streaming' && ppm !== null;
-  const isRecordDisabled = !isRecording && !canStartRecording;
+  const {
+    state: {isRecording, samples, isRecordDisabled},
+    actions: {toggleRecording},
+  } = useRecordingSession({
+    telemetry,
+    isConnected,
+    canStartRecording,
+  });
   const levelFraction = ppm === null ? 0 : ppmLevelFraction(ppm);
 
   return (
@@ -220,13 +224,20 @@ export default function ClientScreen({onBack}: Props) {
         )}
         {isConnected && (
           <>
+            {samples.length > 0 && (
+              <Text
+                testID="recording-sample-count"
+                style={[styles.hint, isDark && styles.textMuted]}>
+                {samples.length} {samples.length === 1 ? 'sample' : 'samples'}
+              </Text>
+            )}
             <Pressable
               testID="record-session-button"
               accessibilityRole="button"
               accessibilityLabel={isRecording ? 'Stop Recording' : 'Record'}
               accessibilityState={{disabled: isRecordDisabled}}
               disabled={isRecordDisabled}
-              onPress={() => setIsRecording(prev => !prev)}
+              onPress={toggleRecording}
               style={[
                 isRecording ? styles.dangerButton : styles.primaryButton,
                 isRecordDisabled && styles.disabledButton,
