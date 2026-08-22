@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {MAX_RECONNECT_ATTEMPTS} from '../../../domain/connection/policy';
+import {nextMaxPpm, ppmLevelFraction} from '../../../domain/signals/ppm';
 import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
 import {ConnectionState} from '../../../types';
 import {useBleClient} from '../hooks/useBleClient';
@@ -80,6 +81,15 @@ export default function ClientScreen({onBack}: Props) {
     connectionState,
   );
   const signalStrength = rssiToSignalStrength(connectedDevice?.rssi ?? null);
+  const ppm = telemetry?.ppm ?? null;
+  const [maxPpm, setMaxPpm] = useState(0);
+  if (ppm === null && maxPpm !== 0) {
+    setMaxPpm(0);
+  } else if (ppm !== null && ppm > maxPpm) {
+    setMaxPpm(nextMaxPpm(maxPpm, ppm));
+  }
+  const levelFraction = ppm === null ? 0 : ppmLevelFraction(ppm);
+  const levelPercent = Math.round(levelFraction * 100);
 
   return (
     <SafeAreaView
@@ -128,29 +138,46 @@ export default function ClientScreen({onBack}: Props) {
 
           <View style={[styles.telemetryCard, isDark && styles.cardDark]}>
             <Text style={[styles.statusLabel, isDark && styles.textMuted]}>
-              Live Telemetry
+              Live PPM
             </Text>
-            {telemetry ? (
+            {ppm !== null ? (
               <>
-                <View style={styles.telemetryMetricsRow}>
+                <View style={styles.ppmValueRow}>
                   <Text
+                    testID="live-ppm-value"
+                    accessibilityLabel={`${ppm} ppm`}
                     style={[styles.telemetryValue, isDark && styles.textLight]}>
-                    {telemetry.temp.toFixed(1)} °C
+                    {ppm}
                   </Text>
-                  <View
-                    style={[
-                      styles.telemetrySeparator,
-                      isDark && styles.telemetrySeparatorDark,
-                    ]}
-                  />
-                  <Text
-                    style={[styles.telemetryValue, isDark && styles.textLight]}>
-                    {telemetry.rpm} RPM
+                  <Text style={[styles.ppmUnit, isDark && styles.textMuted]}>
+                    ppm
                   </Text>
                 </View>
-                <Text style={[styles.telemetryDetail, isDark && styles.textMuted]}>
-                  Status: {telemetry.status}
+                <Text
+                  testID="live-ppm-max"
+                  style={[styles.telemetryDetail, isDark && styles.textMuted]}>
+                  MAX {maxPpm}
                 </Text>
+                <View
+                  testID="ppm-level-bar"
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{
+                    min: 0,
+                    max: 100,
+                    now: levelPercent,
+                  }}
+                  style={[
+                    styles.levelBarTrack,
+                    isDark && styles.levelBarTrackDark,
+                  ]}>
+                  <View
+                    testID="ppm-level-bar-fill"
+                    style={[
+                      styles.levelBarFill,
+                      {width: `${levelPercent}%`},
+                    ]}
+                  />
+                </View>
               </>
             ) : (
               <Text style={[styles.hint, isDark && styles.textMuted]}>
@@ -327,25 +354,36 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
-  telemetryMetricsRow: {
+  ppmValueRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     marginTop: 4,
-    gap: 16,
+    gap: 8,
   },
-  telemetrySeparator: {
-    width: 1,
-    alignSelf: 'stretch',
-    minHeight: 32,
-    backgroundColor: '#E5E7EB',
-  },
-  telemetrySeparatorDark: {
-    backgroundColor: '#374151',
+  ppmUnit: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   telemetryDetail: {
     fontSize: 15,
     color: '#6B7280',
     marginTop: 4,
+  },
+  levelBarTrack: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+    overflow: 'hidden',
+    marginTop: 12,
+  },
+  levelBarTrackDark: {
+    backgroundColor: '#374151',
+  },
+  levelBarFill: {
+    height: '100%',
+    backgroundColor: '#22C55E',
+    borderRadius: 6,
   },
   hint: {
     fontSize: 14,

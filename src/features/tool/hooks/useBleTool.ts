@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {generateMockTelemetry} from '../../../domain/telemetry/mock';
 import {encodeTelemetryBase64} from '../../../domain/telemetry/serialize';
 import {BlePeripheralService} from '../../../services/ble/BlePeripheralService';
 import {TELEMETRY_INTERVAL_MS} from '../../../services/ble/constants';
@@ -6,15 +7,6 @@ import {requestToolPermissions} from '../../../services/ble/permissions';
 import {TelemetryPayload} from '../../../types';
 
 type ToolState = 'idle' | 'starting' | 'advertising' | 'connected' | 'error';
-
-function generateTelemetry(): TelemetryPayload {
-  return {
-    temp: Math.round((20 + Math.random() * 15) * 10) / 10,
-    rpm: 1000 + Math.floor(Math.random() * 500),
-    status: 'running',
-    timestamp: Date.now(),
-  };
-}
 
 export function useBleTool() {
   const serviceRef = useRef(new BlePeripheralService());
@@ -39,7 +31,7 @@ export function useBleTool() {
   }, []);
 
   const pushTelemetry = useCallback(async () => {
-    const payload = generateTelemetry();
+    const payload = generateMockTelemetry();
     setLastTelemetry(payload);
     await serviceRef.current.updateTelemetry(encodeTelemetryBase64(payload));
   }, []);
@@ -58,7 +50,7 @@ export function useBleTool() {
 
   const setupGattProfile = useCallback(() => {
     serviceRef.current.setupGattProfile(
-      encodeTelemetryBase64(generateTelemetry()),
+      encodeTelemetryBase64(generateMockTelemetry()),
     );
   }, []);
 

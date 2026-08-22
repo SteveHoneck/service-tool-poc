@@ -11,8 +11,7 @@ export type ConnectionState =
   | 'error';
 
 export interface TelemetryPayload {
-  temp: number;
-  rpm: number;
+  ppm: number;
   status: string;
   timestamp: number;
 }

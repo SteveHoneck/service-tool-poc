@@ -23,7 +23,7 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
 1. **Phone 1 (Tool Mode)** — Open app → **Tool Mode** → **Start Advertising**
    - Device advertises as `ServiceTool-001`
 2. **Phone 2 (Client Mode)** — Open app → **Client Mode** → **Scan for Tools** → tap **Connect**
-   - Live telemetry (temperature, RPM) updates every second
+   - Live PPM updates every second
    - Firmware badge shows `1.2.0 — Compatible`
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count
@@ -59,7 +59,7 @@ Single app, two modes — implemented with **feature modules + layered MVVM** (n
 
 ```
 Service FFF0 (vendor tool service)
-  ├─ FFF1  NOTIFY  telemetry JSON { t, r, s }  (compact wire format)
+  ├─ FFF1  NOTIFY  telemetry JSON { p, s, ts }  (p = ppm, s = status, ts = sample time)
   ├─ FFF2  WRITE   command (start/stop stream)
   └─ FFF3  READ    device status
 
