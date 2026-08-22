@@ -16,7 +16,7 @@ describe('useRecordingSession', () => {
     canStartRecording: true,
   };
 
-  it('logs the live sample when Record is pressed', async () => {
+  it('logs the live sample when recording starts', async () => {
     jest.spyOn(Date, 'now').mockReturnValue(50);
 
     const {result} = await renderHook(() =>
@@ -27,7 +27,7 @@ describe('useRecordingSession', () => {
     );
 
     await act(() => {
-      result.current.actions.toggleRecording();
+      result.current.actions.startRecording();
     });
 
     expect(result.current.state.isRecording).toBe(true);
@@ -47,7 +47,7 @@ describe('useRecordingSession', () => {
     );
 
     await act(() => {
-      result.current.actions.toggleRecording();
+      result.current.actions.startRecording();
     });
 
     await rerender({telemetry: payload(180, 2)});
@@ -71,7 +71,7 @@ describe('useRecordingSession', () => {
     ]);
   });
 
-  it('stops appending after Stop and starts a new log on Record', async () => {
+  it('endCapture returns the log, clears it, and does not append further', async () => {
     const {result, rerender} = await renderHook(
       ({telemetry}: {telemetry: TelemetryPayload}) =>
         useRecordingSession({
@@ -82,23 +82,26 @@ describe('useRecordingSession', () => {
     );
 
     await act(() => {
-      result.current.actions.toggleRecording();
+      result.current.actions.startRecording();
     });
     await rerender({telemetry: payload(180, 2)});
 
+    let captured;
     await act(() => {
-      result.current.actions.toggleRecording();
+      captured = result.current.actions.endCapture();
     });
-    expect(result.current.state.isRecording).toBe(false);
-
-    await rerender({telemetry: payload(200, 3)});
-    expect(result.current.state.samples).toEqual([
+    expect(captured).toEqual([
       {ppm: 100, timestamp: 1},
       {ppm: 180, timestamp: 2},
     ]);
+    expect(result.current.state.isRecording).toBe(false);
+    expect(result.current.state.samples).toEqual([]);
+
+    await rerender({telemetry: payload(200, 3)});
+    expect(result.current.state.samples).toEqual([]);
 
     await act(() => {
-      result.current.actions.toggleRecording();
+      result.current.actions.startRecording();
     });
     expect(result.current.state.isRecording).toBe(true);
     expect(result.current.state.samples).toEqual([
@@ -128,7 +131,7 @@ describe('useRecordingSession', () => {
     );
 
     await act(() => {
-      result.current.actions.toggleRecording();
+      result.current.actions.startRecording();
     });
 
     await rerender({

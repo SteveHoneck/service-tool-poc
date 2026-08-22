@@ -12,13 +12,14 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {MAX_RECONNECT_ATTEMPTS} from '../../../domain/connection/policy';
 import {nextMaxPpm, ppmLevelFraction} from '../../../domain/signals/ppm';
 import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
-import {ConnectionState} from '../../../types';
+import {ConnectionState, PpmSample} from '../../../types';
 import {LivePpmLevelBar} from '../components/LivePpmLevelBar';
 import {useBleClient} from '../hooks/useBleClient';
 import {useRecordingSession} from '../hooks/useRecordingSession';
 
 interface Props {
   onBack: () => void;
+  onCreateReport: (samples: PpmSample[]) => void;
 }
 
 function stateLabel(state: ConnectionState): string {
@@ -60,7 +61,7 @@ function firmwareBadgeLabel(
   return `Firmware ${version} — ${status}`;
 }
 
-export default function ClientScreen({onBack}: Props) {
+export default function ClientScreen({onBack, onCreateReport}: Props) {
   const isDark = useColorScheme() === 'dark';
   const {
     connectionState,
@@ -94,7 +95,7 @@ export default function ClientScreen({onBack}: Props) {
     connectionState === 'streaming' && ppm !== null;
   const {
     state: {isRecording, samples, isRecordDisabled},
-    actions: {toggleRecording},
+    actions: {startRecording, endCapture},
   } = useRecordingSession({
     telemetry,
     isConnected,
@@ -237,7 +238,13 @@ export default function ClientScreen({onBack}: Props) {
               accessibilityLabel={isRecording ? 'Stop Recording' : 'Record'}
               accessibilityState={{disabled: isRecordDisabled}}
               disabled={isRecordDisabled}
-              onPress={toggleRecording}
+              onPress={() => {
+                if (isRecording) {
+                  onCreateReport(endCapture());
+                  return;
+                }
+                startRecording();
+              }}
               style={[
                 isRecording ? styles.dangerButton : styles.primaryButton,
                 isRecordDisabled && styles.disabledButton,

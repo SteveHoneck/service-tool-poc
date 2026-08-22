@@ -12,7 +12,8 @@ export interface RecordingSessionState {
 }
 
 export interface RecordingSessionActions {
-  toggleRecording: () => void;
+  startRecording: () => void;
+  endCapture: () => PpmSample[];
 }
 
 interface Params {
@@ -48,14 +49,17 @@ export function useRecordingSession({
     setSamples(prev => appendPpmSample(prev, toPpmSample(telemetry)));
   }, [isRecording, telemetry]);
 
-  const toggleRecording = useCallback(() => {
-    if (isRecording) {
-      setIsRecording(false);
-      return;
-    }
+  const startRecording = useCallback(() => {
     setSamples([]);
     setIsRecording(true);
-  }, [isRecording]);
+  }, []);
+
+  const endCapture = useCallback((): PpmSample[] => {
+    const captured = samples;
+    setIsRecording(false);
+    setSamples([]);
+    return captured;
+  }, [samples]);
 
   return {
     state: {
@@ -63,6 +67,6 @@ export function useRecordingSession({
       samples,
       isRecordDisabled: !isRecording && !canStartRecording,
     },
-    actions: {toggleRecording},
+    actions: {startRecording, endCapture},
   };
 }

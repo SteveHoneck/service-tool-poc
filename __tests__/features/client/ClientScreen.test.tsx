@@ -59,7 +59,7 @@ describe('ClientScreen', () => {
       reconnectAttempt: 5,
     });
 
-    await render(<ClientScreen onBack={jest.fn()} />);
+    await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
     expect(
       screen.getByText(`Attempt 5 of ${MAX_RECONNECT_ATTEMPTS}`),
@@ -74,7 +74,7 @@ describe('ClientScreen', () => {
         timestamp: 1,
       });
 
-      await render(<ClientScreen onBack={jest.fn()} />);
+      await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.getByText('Live PPM')).toBeOnTheScreen();
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('250');
@@ -95,7 +95,7 @@ describe('ClientScreen', () => {
         telemetry: null,
       });
 
-      await render(<ClientScreen onBack={jest.fn()} />);
+      await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.getByText('Live PPM')).toBeOnTheScreen();
       expect(screen.getByText('Waiting for notify stream…')).toBeOnTheScreen();
@@ -110,7 +110,7 @@ describe('ClientScreen', () => {
         timestamp: 1,
       });
 
-      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('100');
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 100');
@@ -124,7 +124,7 @@ describe('ClientScreen', () => {
         status: 'running',
         timestamp: 2,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('300');
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 300');
@@ -138,7 +138,7 @@ describe('ClientScreen', () => {
         status: 'running',
         timestamp: 3,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('50');
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 300');
@@ -155,7 +155,7 @@ describe('ClientScreen', () => {
         timestamp: 1,
       });
 
-      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 200');
 
       mockClient({
@@ -167,7 +167,7 @@ describe('ClientScreen', () => {
         },
         telemetry: null,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.queryByTestId('live-ppm-max')).toBeNull();
 
       streamingClient({
@@ -175,7 +175,7 @@ describe('ClientScreen', () => {
         status: 'running',
         timestamp: 2,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 100');
     });
   });
@@ -184,7 +184,7 @@ describe('ClientScreen', () => {
     it('does not show Record when disconnected', async () => {
       mockClient({connectionState: 'idle'});
 
-      await render(<ClientScreen onBack={jest.fn()} />);
+      await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.queryByTestId('record-session-button')).toBeNull();
     });
@@ -200,7 +200,7 @@ describe('ClientScreen', () => {
         telemetry: null,
       });
 
-      await render(<ClientScreen onBack={jest.fn()} />);
+      await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
 
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
         'Record',
@@ -208,14 +208,14 @@ describe('ClientScreen', () => {
       expect(screen.getByTestId('record-session-button')).toBeDisabled();
     });
 
-    it('toggles Record to Stop Recording and back when streaming', async () => {
+    it('switches Record to Stop Recording when streaming', async () => {
       streamingClient({
         ppm: 250,
         status: 'running',
         timestamp: 1,
       });
 
-      await render(<ClientScreen onBack={jest.fn()} />);
+      await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       const user = userEvent.setup();
 
       const button = screen.getByTestId('record-session-button');
@@ -226,11 +226,6 @@ describe('ClientScreen', () => {
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
         'Stop Recording',
       );
-
-      await user.press(screen.getByTestId('record-session-button'));
-      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
-        'Record',
-      );
     });
 
     it('resets to Record after disconnect', async () => {
@@ -240,7 +235,7 @@ describe('ClientScreen', () => {
         timestamp: 1,
       });
 
-      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       const user = userEvent.setup();
       await user.press(screen.getByTestId('record-session-button'));
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
@@ -248,7 +243,7 @@ describe('ClientScreen', () => {
       );
 
       mockClient({connectionState: 'idle'});
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.queryByTestId('record-session-button')).toBeNull();
 
       streamingClient({
@@ -256,20 +251,23 @@ describe('ClientScreen', () => {
         status: 'running',
         timestamp: 2,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
         'Record',
       );
     });
 
-    it('logs samples while recording and starts a new log after Stop', async () => {
+    it('hands the captured log to Create Report on Stop', async () => {
+      const onCreateReport = jest.fn();
       streamingClient({
         ppm: 100,
         status: 'running',
         timestamp: 1,
       });
 
-      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const {rerender} = await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
       const user = userEvent.setup();
 
       expect(screen.queryByTestId('recording-sample-count')).toBeNull();
@@ -284,30 +282,23 @@ describe('ClientScreen', () => {
         status: 'running',
         timestamp: 2,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
       expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
         '2 samples',
       );
 
       await user.press(screen.getByTestId('record-session-button'));
+      expect(onCreateReport).toHaveBeenCalledTimes(1);
+      expect(onCreateReport).toHaveBeenCalledWith([
+        {ppm: 100, timestamp: 1},
+        {ppm: 180, timestamp: 2},
+      ]);
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
         'Record',
       );
-
-      streamingClient({
-        ppm: 220,
-        status: 'running',
-        timestamp: 3,
-      });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
-      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
-        '2 samples',
-      );
-
-      await user.press(screen.getByTestId('record-session-button'));
-      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
-        '1 sample',
-      );
+      expect(screen.queryByTestId('recording-sample-count')).toBeNull();
     });
 
     it('does not log while reconnecting and resumes the same log after stream returns', async () => {
@@ -317,7 +308,7 @@ describe('ClientScreen', () => {
         timestamp: 1,
       });
 
-      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       const user = userEvent.setup();
       await user.press(screen.getByTestId('record-session-button'));
 
@@ -330,7 +321,7 @@ describe('ClientScreen', () => {
         },
         telemetry: null,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
         'Stop Recording',
       );
@@ -343,7 +334,7 @@ describe('ClientScreen', () => {
         status: 'running',
         timestamp: 2,
       });
-      await rerender(<ClientScreen onBack={jest.fn()} />);
+      await rerender(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
       expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
         '2 samples',
       );
