@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, screen} from '@testing-library/react-native';
+import {render, screen, userEvent} from '@testing-library/react-native';
 import {MAX_RECONNECT_ATTEMPTS} from '../../../src/domain/connection/policy';
 import {useBleClient} from '../../../src/features/client/hooks/useBleClient';
 import ClientScreen from '../../../src/features/client/screens/ClientScreen';
@@ -174,6 +174,89 @@ describe('ClientScreen', () => {
       });
       await rerender(<ClientScreen onBack={jest.fn()} />);
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 100');
+    });
+  });
+
+  describe('record toggle', () => {
+    it('does not show Record when disconnected', async () => {
+      mockClient({connectionState: 'idle'});
+
+      await render(<ClientScreen onBack={jest.fn()} />);
+
+      expect(screen.queryByTestId('record-session-button')).toBeNull();
+    });
+
+    it('shows a disabled Record button when connected without a live stream', async () => {
+      mockClient({
+        connectionState: 'connected',
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      });
+
+      await render(<ClientScreen onBack={jest.fn()} />);
+
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Record',
+      );
+      expect(screen.getByTestId('record-session-button')).toBeDisabled();
+    });
+
+    it('toggles Record to Stop Recording and back when streaming', async () => {
+      streamingClient({
+        ppm: 250,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      await render(<ClientScreen onBack={jest.fn()} />);
+      const user = userEvent.setup();
+
+      const button = screen.getByTestId('record-session-button');
+      expect(button).toHaveTextContent('Record');
+      expect(button).toBeEnabled();
+
+      await user.press(button);
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Stop Recording',
+      );
+
+      await user.press(screen.getByTestId('record-session-button'));
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Record',
+      );
+    });
+
+    it('resets to Record after disconnect', async () => {
+      streamingClient({
+        ppm: 250,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(<ClientScreen onBack={jest.fn()} />);
+      const user = userEvent.setup();
+      await user.press(screen.getByTestId('record-session-button'));
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Stop Recording',
+      );
+
+      mockClient({connectionState: 'idle'});
+      await rerender(<ClientScreen onBack={jest.fn()} />);
+      expect(screen.queryByTestId('record-session-button')).toBeNull();
+
+      streamingClient({
+        ppm: 250,
+        status: 'running',
+        timestamp: 2,
+      });
+      await rerender(<ClientScreen onBack={jest.fn()} />);
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Record',
+      );
     });
   });
 });

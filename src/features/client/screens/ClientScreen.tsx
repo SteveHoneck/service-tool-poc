@@ -83,11 +83,18 @@ export default function ClientScreen({onBack}: Props) {
   const signalStrength = rssiToSignalStrength(connectedDevice?.rssi ?? null);
   const ppm = telemetry?.ppm ?? null;
   const [maxPpm, setMaxPpm] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   if (ppm === null && maxPpm !== 0) {
     setMaxPpm(0);
   } else if (ppm !== null && ppm > maxPpm) {
     setMaxPpm(nextMaxPpm(maxPpm, ppm));
   }
+  if (!isConnected && isRecording) {
+    setIsRecording(false);
+  }
+  const canStartRecording =
+    connectionState === 'streaming' && ppm !== null;
+  const isRecordDisabled = !isRecording && !canStartRecording;
   const levelFraction = ppm === null ? 0 : ppmLevelFraction(ppm);
   const levelPercent = Math.round(levelFraction * 100);
 
@@ -231,9 +238,26 @@ export default function ClientScreen({onBack}: Props) {
           </>
         )}
         {isConnected && (
-          <Pressable style={styles.dangerButton} onPress={disconnect}>
-            <Text style={styles.primaryButtonText}>Disconnect</Text>
-          </Pressable>
+          <>
+            <Pressable
+              testID="record-session-button"
+              accessibilityRole="button"
+              accessibilityLabel={isRecording ? 'Stop Recording' : 'Record'}
+              accessibilityState={{disabled: isRecordDisabled}}
+              disabled={isRecordDisabled}
+              onPress={() => setIsRecording(prev => !prev)}
+              style={[
+                isRecording ? styles.dangerButton : styles.primaryButton,
+                isRecordDisabled && styles.disabledButton,
+              ]}>
+              <Text style={styles.primaryButtonText}>
+                {isRecording ? 'Stop Recording' : 'Record'}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.dangerButton} onPress={disconnect}>
+              <Text style={styles.primaryButtonText}>Disconnect</Text>
+            </Pressable>
+          </>
         )}
       </View>
 
@@ -427,6 +451,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   list: {
     paddingHorizontal: 20,
