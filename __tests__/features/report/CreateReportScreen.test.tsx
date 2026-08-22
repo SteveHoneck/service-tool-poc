@@ -47,4 +47,29 @@ describe('CreateReportScreen', () => {
     await user.press(screen.getByTestId('create-report-back'));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the connection-lost note for a complete capture', async () => {
+    await render(
+      <CreateReportScreen
+        samples={[{ppm: 100, timestamp: 1}]}
+        onBack={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('create-report-partial-note')).toBeNull();
+  });
+
+  it('notes when the session ended after a connection loss', async () => {
+    await render(
+      <CreateReportScreen
+        samples={[{ppm: 100, timestamp: 1}]}
+        partial
+        onBack={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('create-report-partial-note')).toHaveTextContent(
+      'Connection lost during session',
+    );
+  });
 });

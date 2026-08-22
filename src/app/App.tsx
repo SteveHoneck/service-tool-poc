@@ -5,14 +5,16 @@ import ClientScreen from '../features/client/screens/ClientScreen';
 import ModeSelectScreen from '../features/mode-select/screens/ModeSelectScreen';
 import CreateReportScreen from '../features/report/screens/CreateReportScreen';
 import ToolScreen from '../features/tool/screens/ToolScreen';
-import {PpmSample} from '../types';
+import {SessionCapture} from '../types';
 
 type Screen = 'mode-select' | 'client' | 'tool' | 'create-report';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
   const [screen, setScreen] = useState<Screen>('mode-select');
-  const [reportSamples, setReportSamples] = useState<PpmSample[]>([]);
+  const [reportCapture, setReportCapture] = useState<SessionCapture | null>(
+    null,
+  );
   const clientMounted = screen === 'client' || screen === 'create-report';
 
   return (
@@ -36,16 +38,17 @@ function App() {
           }>
           <ClientScreen
             onBack={() => setScreen('mode-select')}
-            onCreateReport={samples => {
-              setReportSamples(samples);
+            onCreateReport={capture => {
+              setReportCapture(capture);
               setScreen('create-report');
             }}
           />
         </View>
       )}
-      {screen === 'create-report' && (
+      {screen === 'create-report' && reportCapture && (
         <CreateReportScreen
-          samples={reportSamples}
+          samples={reportCapture.samples}
+          partial={reportCapture.partial}
           onBack={() => setScreen('client')}
         />
       )}

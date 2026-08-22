@@ -1,5 +1,6 @@
 import React from 'react';
-import {render, screen, userEvent} from '@testing-library/react-native';
+import {Alert} from 'react-native';
+import {act, render, screen, userEvent} from '@testing-library/react-native';
 import {MAX_RECONNECT_ATTEMPTS} from '../../../src/domain/connection/policy';
 import {useBleClient} from '../../../src/features/client/hooks/useBleClient';
 import ClientScreen from '../../../src/features/client/screens/ClientScreen';
@@ -53,6 +54,10 @@ function streamingClient(
 }
 
 describe('ClientScreen', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('should display the current reconnect attempt out of the total retry limit', async () => {
     mockClient({
       connectionState: 'reconnecting',
@@ -291,10 +296,14 @@ describe('ClientScreen', () => {
 
       await user.press(screen.getByTestId('record-session-button'));
       expect(onCreateReport).toHaveBeenCalledTimes(1);
-      expect(onCreateReport).toHaveBeenCalledWith([
-        {ppm: 100, timestamp: 1},
-        {ppm: 180, timestamp: 2},
-      ]);
+      expect(onCreateReport).toHaveBeenCalledWith({
+        samples: [
+          {ppm: 100, timestamp: 1},
+          {ppm: 180, timestamp: 2},
+        ],
+        gaps: [],
+        partial: false,
+      });
       expect(screen.getByTestId('record-session-button')).toHaveTextContent(
         'Record',
       );
@@ -338,6 +347,240 @@ describe('ClientScreen', () => {
       expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
         '2 samples',
       );
+    });
+
+    it('freezes last PPM and MAX while recording across a drop', async () => {
+      streamingClient({
+        ppm: 200,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+      const user = userEvent.setup();
+      await user.press(screen.getByTestId('record-session-button'));
+
+      mockClient({
+        connectionState: 'reconnecting',
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      });
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+
+      expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('200');
+      expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 200');
+      expect(screen.queryByText('Waiting for notify stream…')).toBeNull();
+    });
+
+    it('keeps the log after reconnect is exhausted and Stop is partial', async () => {
+      const onCreateReport = jest.fn();
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      streamingClient({
+        ppm: 100,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
+      const user = userEvent.setup();
+      await user.press(screen.getByTestId('record-session-button'));
+
+      mockClient({
+        connectionState: 'reconnecting',
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      });
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
+      expect(alertSpy).not.toHaveBeenCalled();
+
+      mockClient({
+        connectionState: 'disconnected',
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      });
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
+
+      expect(screen.getByTestId('recording-sample-count')).toHaveTextContent(
+        '1 sample',
+      );
+      expect(screen.getByTestId('record-session-button')).toHaveTextContent(
+        'Stop Recording',
+      );
+      expect(alertSpy).toHaveBeenCalledTimes(1);
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Could not reconnect',
+        'Save partial report or keep trying?',
+        expect.arrayContaining([
+          expect.objectContaining({text: 'Keep trying'}),
+          expect.objectContaining({text: 'Save partial report'}),
+        ]),
+      );
+
+      await rerender(
+        <ClientScreen
+          onBack={jest.fn()}
+          onCreateReport={capture => onCreateReport(capture)}
+        />,
+      );
+      expect(alertSpy).toHaveBeenCalledTimes(1);
+
+      await user.press(screen.getByTestId('record-session-button'));
+      expect(onCreateReport).toHaveBeenCalledWith({
+        samples: [{ppm: 100, timestamp: 1}],
+        gaps: [{at: 1, reason: 'disconnect'}],
+        partial: true,
+      });
+    });
+
+    it('does not show leftover scan results after the connection drops', async () => {
+      mockClient({
+        connectionState: 'disconnected',
+        devices: [
+          {
+            id: 'tool-1',
+            name: 'ServiceTool-001',
+            rssi: -40,
+          },
+        ],
+      });
+
+      await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+
+      expect(screen.getByText('Scan for Tools')).toBeOnTheScreen();
+      expect(screen.getByText('Reconnect Last Device')).toBeOnTheScreen();
+      expect(screen.queryByText('Connect')).toBeNull();
+    });
+
+    it('shows scan hits only while scanning', async () => {
+      mockClient({
+        connectionState: 'scanning',
+        devices: [
+          {
+            id: 'tool-1',
+            name: 'ServiceTool-001',
+            rssi: -40,
+          },
+        ],
+      });
+
+      await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+
+      expect(screen.getByText('ServiceTool-001')).toBeOnTheScreen();
+      expect(screen.getByText('Connect')).toBeOnTheScreen();
+    });
+
+    it('saves a partial report from the reconnect-failed prompt', async () => {
+      const onCreateReport = jest.fn();
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      streamingClient({
+        ppm: 100,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
+      const user = userEvent.setup();
+      await user.press(screen.getByTestId('record-session-button'));
+
+      mockClient({
+        connectionState: 'disconnected',
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      });
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={onCreateReport} />,
+      );
+
+      const buttons = alertSpy.mock.calls[0][2] as Array<{
+        text: string;
+        onPress?: () => void;
+      }>;
+      const save = buttons.find(button => button.text === 'Save partial report');
+      await act(() => {
+        save?.onPress?.();
+      });
+
+      expect(onCreateReport).toHaveBeenCalledWith({
+        samples: [{ppm: 100, timestamp: 1}],
+        gaps: [{at: 1, reason: 'disconnect'}],
+        partial: true,
+      });
+    });
+
+    it('prompts again if reconnect succeeds then fails a second time', async () => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      streamingClient({
+        ppm: 100,
+        status: 'running',
+        timestamp: 1,
+      });
+
+      const {rerender} = await render(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+      const user = userEvent.setup();
+      await user.press(screen.getByTestId('record-session-button'));
+
+      const dropped = {
+        connectionState: 'disconnected' as const,
+        connectedDevice: {
+          id: 'tool-1',
+          name: 'ServiceTool-001',
+          rssi: -40,
+        },
+        telemetry: null,
+      };
+      mockClient(dropped);
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+      expect(alertSpy).toHaveBeenCalledTimes(1);
+
+      streamingClient({
+        ppm: 80,
+        status: 'running',
+        timestamp: 2,
+      });
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+      mockClient(dropped);
+      await rerender(
+        <ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />,
+      );
+      expect(alertSpy).toHaveBeenCalledTimes(2);
     });
   });
 });

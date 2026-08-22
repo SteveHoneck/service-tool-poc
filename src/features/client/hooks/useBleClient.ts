@@ -119,6 +119,7 @@ export function useBleClient() {
         reconnectingRef.current = true;
         setConnectionState('reconnecting');
         setTelemetry(null);
+        setDevices([]);
 
         try {
           await withReconnect(
@@ -203,6 +204,7 @@ export function useBleClient() {
     reconnectingRef.current = false;
     setConnectedDevice(null);
     setTelemetry(null);
+    setDevices([]);
     setFirmwareVersion(null);
     setFirmwareCompatibility('unknown');
     setConnectionState('disconnected');
@@ -230,6 +232,7 @@ export function useBleClient() {
       const message =
         error instanceof Error ? error.message : 'Reconnection failed';
       setErrorMessage(message);
+      setDevices([]);
       setConnectionState('disconnected');
     }
   }, [connectToDevice]);

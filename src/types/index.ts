@@ -21,6 +21,17 @@ export interface PpmSample {
   ppm: number;
 }
 
+export interface SessionGap {
+  at: number;
+  reason: 'disconnect';
+}
+
+export interface SessionCapture {
+  samples: PpmSample[];
+  gaps: SessionGap[];
+  partial: boolean;
+}
+
 export interface ScannedDevice {
   id: string;
   name: string | null;

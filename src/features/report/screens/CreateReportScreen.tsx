@@ -11,10 +11,15 @@ import {PpmSample} from '../../../types';
 
 interface Props {
   samples: PpmSample[];
+  partial?: boolean;
   onBack: () => void;
 }
 
-export default function CreateReportScreen({samples, onBack}: Props) {
+export default function CreateReportScreen({
+  samples,
+  partial = false,
+  onBack,
+}: Props) {
   const isDark = useColorScheme() === 'dark';
 
   return (
@@ -36,6 +41,13 @@ export default function CreateReportScreen({samples, onBack}: Props) {
           style={[styles.body, isDark && styles.textMuted]}>
           {samples.length} {samples.length === 1 ? 'sample' : 'samples'} captured
         </Text>
+        {partial && (
+          <Text
+            testID="create-report-partial-note"
+            style={[styles.body, isDark && styles.textMuted]}>
+            Connection lost during session
+          </Text>
+        )}
         <Text style={[styles.body, isDark && styles.textMuted]}>
           Report details are not implemented yet.
         </Text>
