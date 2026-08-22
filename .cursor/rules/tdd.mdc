@@ -1,0 +1,17 @@
+---
+description: Test-driven development for new behavior and bugfixes
+alwaysApply: true
+---
+
+# TDD
+
+For new behavior or a failing production path, follow `.cursor/skills/tdd/SKILL.md`.
+
+1. Write a failing test first under `__tests__/`, mirroring the source path.
+2. Run the relevant test and confirm it fails for the right reason.
+3. Write the minimum production code to pass.
+4. Re-run tests. Do not claim done until they pass.
+5. Refactor only after green.
+
+`domain/` tests: no mocks. `services/` tests: mock native BLE modules.
+Do not add production code without a failing test unless the change is pure types, docs, or config.
