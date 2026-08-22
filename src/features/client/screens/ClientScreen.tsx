@@ -13,6 +13,7 @@ import {MAX_RECONNECT_ATTEMPTS} from '../../../domain/connection/policy';
 import {nextMaxPpm, ppmLevelFraction} from '../../../domain/signals/ppm';
 import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
 import {ConnectionState} from '../../../types';
+import {LivePpmLevelBar} from '../components/LivePpmLevelBar';
 import {useBleClient} from '../hooks/useBleClient';
 
 interface Props {
@@ -96,7 +97,6 @@ export default function ClientScreen({onBack}: Props) {
     connectionState === 'streaming' && ppm !== null;
   const isRecordDisabled = !isRecording && !canStartRecording;
   const levelFraction = ppm === null ? 0 : ppmLevelFraction(ppm);
-  const levelPercent = Math.round(levelFraction * 100);
 
   return (
     <SafeAreaView
@@ -165,26 +165,7 @@ export default function ClientScreen({onBack}: Props) {
                   style={[styles.telemetryDetail, isDark && styles.textMuted]}>
                   MAX {maxPpm}
                 </Text>
-                <View
-                  testID="ppm-level-bar"
-                  accessibilityRole="progressbar"
-                  accessibilityValue={{
-                    min: 0,
-                    max: 100,
-                    now: levelPercent,
-                  }}
-                  style={[
-                    styles.levelBarTrack,
-                    isDark && styles.levelBarTrackDark,
-                  ]}>
-                  <View
-                    testID="ppm-level-bar-fill"
-                    style={[
-                      styles.levelBarFill,
-                      {width: `${levelPercent}%`},
-                    ]}
-                  />
-                </View>
+                <LivePpmLevelBar fraction={levelFraction} isDark={isDark} />
               </>
             ) : (
               <Text style={[styles.hint, isDark && styles.textMuted]}>
@@ -393,21 +374,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#6B7280',
     marginTop: 4,
-  },
-  levelBarTrack: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#E5E7EB',
-    overflow: 'hidden',
-    marginTop: 12,
-  },
-  levelBarTrackDark: {
-    backgroundColor: '#374151',
-  },
-  levelBarFill: {
-    height: '100%',
-    backgroundColor: '#22C55E',
-    borderRadius: 6,
   },
   hint: {
     fontSize: 14,

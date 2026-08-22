@@ -114,9 +114,10 @@ describe('ClientScreen', () => {
 
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('100');
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 100');
-      expect(screen.getByTestId('ppm-level-bar-fill')).toHaveStyle({
-        width: '20%',
-      });
+      expect(screen.getByTestId('ppm-level-bar')).toHaveProp(
+        'accessibilityValue',
+        {min: 0, max: 100, now: 20},
+      );
 
       streamingClient({
         ppm: 300,
@@ -127,9 +128,10 @@ describe('ClientScreen', () => {
 
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('300');
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 300');
-      expect(screen.getByTestId('ppm-level-bar-fill')).toHaveStyle({
-        width: '60%',
-      });
+      expect(screen.getByTestId('ppm-level-bar')).toHaveProp(
+        'accessibilityValue',
+        {min: 0, max: 100, now: 60},
+      );
 
       streamingClient({
         ppm: 50,
@@ -140,9 +142,10 @@ describe('ClientScreen', () => {
 
       expect(screen.getByTestId('live-ppm-value')).toHaveTextContent('50');
       expect(screen.getByTestId('live-ppm-max')).toHaveTextContent('MAX 300');
-      expect(screen.getByTestId('ppm-level-bar-fill')).toHaveStyle({
-        width: '10%',
-      });
+      expect(screen.getByTestId('ppm-level-bar')).toHaveProp(
+        'accessibilityValue',
+        {min: 0, max: 100, now: 10},
+      );
     });
 
     it('resets MAX when telemetry drops', async () => {
