@@ -5,29 +5,34 @@ import {
   normalizeBleText,
 } from './base64';
 
+function statusFromWire(value: unknown): string {
+  if (value === 'run') {
+    return 'running';
+  }
+  return typeof value === 'string' ? value : 'unknown';
+}
+
 function tryParseTelemetryJson(text: string): TelemetryPayload | null {
   const parsed = JSON.parse(text) as Record<string, unknown>;
 
-  if (typeof parsed.t === 'number' && typeof parsed.r === 'number') {
+  if (typeof parsed.p === 'number') {
     return {
-      temp: parsed.t,
-      rpm: parsed.r,
-      status: parsed.s === 'run' ? 'running' : String(parsed.s ?? 'unknown'),
+      ppm: Math.round(parsed.p),
+      status: statusFromWire(parsed.s),
       timestamp: typeof parsed.ts === 'number' ? parsed.ts : Date.now(),
     };
   }
 
-  if (
-    typeof parsed.temp === 'number' &&
-    typeof parsed.rpm === 'number' &&
-    typeof parsed.status === 'string'
-  ) {
+  if (typeof parsed.ppm === 'number') {
     return {
-      temp: parsed.temp,
-      rpm: parsed.rpm,
-      status: parsed.status,
+      ppm: Math.round(parsed.ppm),
+      status: statusFromWire(parsed.status ?? parsed.s),
       timestamp:
-        typeof parsed.timestamp === 'number' ? parsed.timestamp : Date.now(),
+        typeof parsed.timestamp === 'number'
+          ? parsed.timestamp
+          : typeof parsed.ts === 'number'
+            ? parsed.ts
+            : Date.now(),
     };
   }
 

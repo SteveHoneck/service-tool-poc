@@ -80,7 +80,7 @@ export default function ToolScreen({onBack}: Props) {
               Last Telemetry Sent
             </Text>
             <Text style={[styles.value, isDark && styles.textLight]}>
-              {lastTelemetry.temp.toFixed(1)} °C · {lastTelemetry.rpm} RPM
+              {lastTelemetry.ppm} ppm
             </Text>
           </>
         )}

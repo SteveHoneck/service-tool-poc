@@ -31,28 +31,29 @@ describe('session bug regressions', () => {
 
   describe('failed to parse telemetry payload (double encoding)', () => {
     it('decodes correctly when tool sends single base64-encoded compact JSON', () => {
-      const payload = {temp: 24.3, rpm: 131, status: 'running', timestamp: 1};
+      const payload = {ppm: 131, status: 'running', timestamp: 1};
       const wire = encodeTelemetryBase64(payload);
       const parsed = parseTelemetryBase64(wire);
-      expect(parsed.temp).toBe(24.3);
-      expect(parsed.rpm).toBe(131);
+      expect(parsed.ppm).toBe(131);
+      expect(parsed.timestamp).toBe(1);
     });
 
     it('still parses if legacy double-encoding bug is present on the wire', () => {
       const json = serializeTelemetry({
-        temp: 24.3,
-        rpm: 144,
+        ppm: 144,
         status: 'running',
         timestamp: 1,
       });
       const doubleEncoded = encodeStringToBase64(encodeStringToBase64(json));
-      expect(parseTelemetryBase64(doubleEncoded).rpm).toBe(144);
+      const parsed = parseTelemetryBase64(doubleEncoded);
+      expect(parsed.ppm).toBe(144);
+      expect(parsed.timestamp).toBe(1);
     });
   });
 
   describe('invalid telemetry payload truncated at ~20 bytes (MTU)', () => {
     it('fails parse for truncated notify data seen on device', () => {
-      const truncated = '{"temp":24.3,"rpm":1';
+      const truncated = '{"p":250,"s":"ru';
       expect(() =>
         parseTelemetryBase64(encodeStringToBase64(truncated)),
       ).toThrow(/Invalid telemetry payload/);
@@ -60,14 +61,12 @@ describe('session bug regressions', () => {
 
     it('compact wire format is shorter than verbose JSON', () => {
       const compact = serializeTelemetry({
-        temp: 24.3,
-        rpm: 114,
+        ppm: 114,
         status: 'running',
         timestamp: Date.now(),
       });
       const verbose = JSON.stringify({
-        temp: 24.3,
-        rpm: 114,
+        ppm: 114,
         status: 'running',
         timestamp: Date.now(),
       });

@@ -1,4 +1,10 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {
+  MockPpmPulseState,
+  advanceMockPpmPulse,
+  createMockPpmPulse,
+  telemetryFromPulse,
+} from '../../../domain/telemetry/mock';
 import {encodeTelemetryBase64} from '../../../domain/telemetry/serialize';
 import {BlePeripheralService} from '../../../services/ble/BlePeripheralService';
 import {TELEMETRY_INTERVAL_MS} from '../../../services/ble/constants';
@@ -7,15 +13,6 @@ import {TelemetryPayload} from '../../../types';
 
 type ToolState = 'idle' | 'starting' | 'advertising' | 'connected' | 'error';
 
-function generateTelemetry(): TelemetryPayload {
-  return {
-    temp: Math.round((20 + Math.random() * 15) * 10) / 10,
-    rpm: 1000 + Math.floor(Math.random() * 500),
-    status: 'running',
-    timestamp: Date.now(),
-  };
-}
-
 export function useBleTool() {
   const serviceRef = useRef(new BlePeripheralService());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -23,12 +20,20 @@ export function useBleTool() {
   const startStreamingRef = useRef<() => void>(() => {});
   const stopStreamingRef = useRef<() => void>(() => {});
   const advertisingStartedRef = useRef(false);
+  const pulseRef = useRef<MockPpmPulseState | null>(null);
   const [toolState, setToolState] = useState<ToolState>('idle');
   const [connectedCentrals, setConnectedCentrals] = useState(0);
   const [lastTelemetry, setLastTelemetry] = useState<TelemetryPayload | null>(
     null,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const nextMockPayload = useCallback((): TelemetryPayload => {
+    pulseRef.current = pulseRef.current
+      ? advanceMockPpmPulse(pulseRef.current)
+      : createMockPpmPulse();
+    return telemetryFromPulse(pulseRef.current);
+  }, []);
 
   const stopStreaming = useCallback(() => {
     streamingRef.current = false;
@@ -39,10 +44,10 @@ export function useBleTool() {
   }, []);
 
   const pushTelemetry = useCallback(async () => {
-    const payload = generateTelemetry();
+    const payload = nextMockPayload();
     setLastTelemetry(payload);
     await serviceRef.current.updateTelemetry(encodeTelemetryBase64(payload));
-  }, []);
+  }, [nextMockPayload]);
 
   const startStreaming = useCallback(() => {
     if (streamingRef.current) {
@@ -58,12 +63,13 @@ export function useBleTool() {
 
   const setupGattProfile = useCallback(() => {
     serviceRef.current.setupGattProfile(
-      encodeTelemetryBase64(generateTelemetry()),
+      encodeTelemetryBase64(nextMockPayload()),
     );
-  }, []);
+  }, [nextMockPayload]);
 
   const resetAdvertisingSession = useCallback(async () => {
     advertisingStartedRef.current = false;
+    pulseRef.current = null;
     stopStreamingRef.current();
     serviceRef.current.stopAdvertising();
     await serviceRef.current.resetSession();
