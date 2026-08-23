@@ -8,6 +8,8 @@ Proof-of-concept React Native app demonstrating BLE connection management betwee
 - Real-time telemetry streaming via notify characteristics (~1 Hz)
 - Automatic reconnection with exponential backoff after disconnect
 - Firmware version read from Device Information Service (DIS) with compatibility badge
+- Record a PPM session, enter Create Report (job, operator, last/MAX PPM), and **Save Report** to a local list
+- Settings stack (gear → Settings → Reports) without dropping the BLE connection
 
 ## Quick start
 
@@ -25,6 +27,9 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
 2. **Phone 2 (Client Mode)** — Open app → **Client Mode** → **Scan for Tools** → tap **Connect**
    - Live PPM updates every second
    - Firmware badge shows `1.2.0 — Compatible`
+   - **Record** → **Stop Recording** opens **Create Report** (sample count, last PPM, MAX, job name, operator)
+   - **Save Report** writes the session and opens the **Reports** list; **Back** without Save discards
+   - Gear → **Settings** → **Reports** shows the same list; Back walks Reports → Settings → Client (BLE stays up)
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count
    - Toggle Bluetooth back on, restart App in Tool mode, **Start Advertising** → auto-reconnects and resumes streaming
@@ -49,7 +54,7 @@ Single app, two modes — implemented with **feature modules + layered MVVM** (n
 |-------|--------|----------------|
 | **Presentation** | `features/*/screens`, `components` | UI, styles, display formatting |
 | **Application** | `features/*/hooks` | Screen state, orchestration |
-| **Domain** | `domain/` | Pure rules: telemetry parse, reconnect policy, signal math |
+| **Domain** | `domain/` | Pure rules: telemetry parse, reconnect policy, signal math, recording, saved reports |
 | **Infrastructure** | `services/` | BLE adapters, permissions, storage |
 
 **Full specification:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
@@ -70,28 +75,32 @@ Service 180A (Device Information)
 
 ## Project structure
 
-**Target layout** (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for migration map):
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for layer rules.
 
 ```
 src/
-  app/                    App shell, mode routing
+  app/                    App shell, mode routing (Client stays mounted under overlays)
   features/
-    client/               Client Mode screens, hooks, components
-    tool/                 Tool Mode screens, hooks, components
+    client/               Client Mode, Settings, recording orchestration
+    tool/                 Tool Mode screens, hooks
     mode-select/          Mode picker screen
+    report/               Create Report, Reports list, report stub
+    shared/               Shared UI (BackLink)
   domain/
     telemetry/            Parse/serialize, wire format
     connection/           Reconnect backoff policy
     device/               UUID helpers, firmware compatibility
-    signals/              RSSI → strength, display math
+    signals/              RSSI → strength, PPM math
+    session/              Recording capture / gaps
+    report/               Build saved report, list label
   services/
     ble/                  Central/peripheral adapters, scan, constants
-    storage/              Last connected device persistence
+    storage/              Last device id, saved-report list
   types/                  Shared TypeScript interfaces
 
-__tests__/                Mirrors domain/, services/, features/
+__tests__/                Mirrors domain/, services/, features/, app/
 docs/
-  ARCHITECTURE.md         Layer rules, dependencies, branch plan
+  ARCHITECTURE.md         Layer rules, folder layout, dependencies
   MANUAL_TESTS.md         Two-phone manual test checklist
 .cursor/rules/            Cursor agent enforcement rules
 ```
@@ -107,6 +116,9 @@ docs/
 
 ## Backlog
 
+- **Report details** — replace `ReportStubScreen` with job, operator, last/MAX PPM, and a simple session graph
+- **PDF** — basic PDF + share sheet from a saved report (not mailto attachment)
+- **Settings stretch** — instrument name, Disconnect, firmware OTA, location, sound
 - **NFC bootstrap** — NTAG213 sticker with NDEF pairing payload
 - **WiFi Direct** — `react-native-wifi-p2p` (Android) / Multipeer (iOS)
 
