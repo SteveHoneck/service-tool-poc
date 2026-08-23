@@ -84,7 +84,7 @@ __tests__/
 ## BLE-specific conventions
 
 - **GATT UUIDs and timeouts** live in `services/ble/constants.ts` (infrastructure contract).
-- **Wire format** (compact JSON `{t,r,s}`) is defined and tested in `domain/telemetry/`.
+- **Wire format** (compact JSON `{p,s,ts}`, `p` = ppm, `s` = status, `ts` = sample time) is defined and tested in `domain/telemetry/`.
 - **Central vs peripheral** code never mixes in one file; two service classes, two feature hooks.
 - **Reconnect flow**: domain defines policy (`withReconnect`, delays); services implement scan/connect; hook wires UI state.
 

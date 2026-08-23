@@ -1,8 +1,9 @@
-import React from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
-  FlatList,
+  Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -10,12 +11,22 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {MAX_RECONNECT_ATTEMPTS} from '../../../domain/connection/policy';
+import {scanResultsForDisplay} from '../../../domain/connection/scanResults';
+import {
+  heldPpm,
+  isSessionActive,
+  shouldPromptPartialSave,
+} from '../../../domain/session/recording';
+import {nextMaxPpm, ppmLevelFraction} from '../../../domain/signals/ppm';
 import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
-import {ConnectionState} from '../../../types';
+import {ConnectionState, SessionCapture} from '../../../types';
+import {LivePpmLevelBar} from '../components/LivePpmLevelBar';
 import {useBleClient} from '../hooks/useBleClient';
+import {useRecordingSession} from '../hooks/useRecordingSession';
 
 interface Props {
   onBack: () => void;
+  onCreateReport: (capture: SessionCapture) => void;
 }
 
 function stateLabel(state: ConnectionState): string {
@@ -57,7 +68,7 @@ function firmwareBadgeLabel(
   return `Firmware ${version} — ${status}`;
 }
 
-export default function ClientScreen({onBack}: Props) {
+export default function ClientScreen({onBack, onCreateReport}: Props) {
   const isDark = useColorScheme() === 'dark';
   const {
     connectionState,
@@ -80,10 +91,59 @@ export default function ClientScreen({onBack}: Props) {
     connectionState,
   );
   const signalStrength = rssiToSignalStrength(connectedDevice?.rssi ?? null);
+  const canStartRecording =
+    connectionState === 'streaming' && telemetry !== null;
+  const {
+    state: {status, isRecording, samples, isRecordDisabled},
+    actions: {startRecording, endCapture},
+  } = useRecordingSession({
+    telemetry,
+    connectionState,
+    hasDevice: connectedDevice != null,
+    canStartRecording,
+  });
+  const livePpm = telemetry?.ppm ?? null;
+  const ppm = heldPpm(livePpm, samples[samples.length - 1], status);
+  const [maxPpm, setMaxPpm] = useState(0);
+  if (livePpm === null && !isSessionActive(status) && maxPpm !== 0) {
+    setMaxPpm(0);
+  } else if (livePpm !== null && livePpm > maxPpm) {
+    setMaxPpm(nextMaxPpm(maxPpm, livePpm));
+  }
+  const levelFraction = ppm === null ? 0 : ppmLevelFraction(ppm);
+  const showSessionChrome = isConnected || isRecording;
+  const ppmHeld = livePpm === null && ppm !== null;
+  const scannedDevices = scanResultsForDisplay(connectionState, devices);
+  const promptedRef = useRef(false);
+
+  useEffect(() => {
+    if (!shouldPromptPartialSave(status, connectionState)) {
+      promptedRef.current = false;
+      return;
+    }
+    if (promptedRef.current) {
+      return;
+    }
+    promptedRef.current = true;
+    Alert.alert(
+      'Could not reconnect',
+      'Save partial report or keep trying?',
+      [
+        {text: 'Keep trying', style: 'cancel'},
+        {
+          text: 'Save partial report',
+          onPress: () => onCreateReport(endCapture()),
+        },
+      ],
+    );
+  }, [connectionState, endCapture, onCreateReport, status]);
 
   return (
     <SafeAreaView
       style={[styles.container, isDark && styles.containerDark]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <Pressable onPress={onBack}>
           <Text style={styles.backLink}>← Back</Text>
@@ -118,7 +178,7 @@ export default function ClientScreen({onBack}: Props) {
         )}
       </View>
 
-      {isConnected && (
+      {showSessionChrome && (
         <>
           <View style={[styles.statusCard, isDark && styles.cardDark]}>
             <Text style={[styles.statusLabel, isDark && styles.textMuted]}>
@@ -126,31 +186,35 @@ export default function ClientScreen({onBack}: Props) {
             </Text>
           </View>
 
-          <View style={[styles.telemetryCard, isDark && styles.cardDark]}>
+          <View
+            style={[
+              styles.telemetryCard,
+              isDark && styles.cardDark,
+              ppmHeld && styles.telemetryCardHeld,
+              ppmHeld && isDark && styles.telemetryCardHeldDark,
+            ]}>
             <Text style={[styles.statusLabel, isDark && styles.textMuted]}>
-              Live Telemetry
+              Live PPM
             </Text>
-            {telemetry ? (
+            {ppm !== null ? (
               <>
-                <View style={styles.telemetryMetricsRow}>
+                <View style={styles.ppmValueRow}>
                   <Text
+                    testID="live-ppm-value"
+                    accessibilityLabel={`${ppm} ppm`}
                     style={[styles.telemetryValue, isDark && styles.textLight]}>
-                    {telemetry.temp.toFixed(1)} °C
+                    {ppm}
                   </Text>
-                  <View
-                    style={[
-                      styles.telemetrySeparator,
-                      isDark && styles.telemetrySeparatorDark,
-                    ]}
-                  />
-                  <Text
-                    style={[styles.telemetryValue, isDark && styles.textLight]}>
-                    {telemetry.rpm} RPM
+                  <Text style={[styles.ppmUnit, isDark && styles.textMuted]}>
+                    ppm
                   </Text>
                 </View>
-                <Text style={[styles.telemetryDetail, isDark && styles.textMuted]}>
-                  Status: {telemetry.status}
+                <Text
+                  testID="live-ppm-max"
+                  style={[styles.telemetryDetail, isDark && styles.textMuted]}>
+                  MAX {maxPpm}
                 </Text>
+                <LivePpmLevelBar fraction={levelFraction} isDark={isDark} />
               </>
             ) : (
               <Text style={[styles.hint, isDark && styles.textMuted]}>
@@ -203,43 +267,68 @@ export default function ClientScreen({onBack}: Props) {
             </Pressable>
           </>
         )}
-        {isConnected && (
-          <Pressable style={styles.dangerButton} onPress={disconnect}>
-            <Text style={styles.primaryButtonText}>Disconnect</Text>
-          </Pressable>
+        {showSessionChrome && (
+          <>
+            {samples.length > 0 && (
+              <Text
+                testID="recording-sample-count"
+                style={[styles.hint, isDark && styles.textMuted]}>
+                {samples.length} {samples.length === 1 ? 'sample' : 'samples'}
+              </Text>
+            )}
+            <Pressable
+              testID="record-session-button"
+              accessibilityRole="button"
+              accessibilityLabel={isRecording ? 'Stop Recording' : 'Record'}
+              accessibilityState={{disabled: isRecordDisabled}}
+              disabled={isRecordDisabled}
+              onPress={() => {
+                if (isRecording) {
+                  onCreateReport(endCapture());
+                  return;
+                }
+                startRecording();
+              }}
+              style={[
+                isRecording ? styles.dangerButton : styles.primaryButton,
+                isRecordDisabled && styles.disabledButton,
+              ]}>
+              <Text style={styles.primaryButtonText}>
+                {isRecording ? 'Stop Recording' : 'Record'}
+              </Text>
+            </Pressable>
+            {isConnected && (
+              <Pressable style={styles.dangerButton} onPress={disconnect}>
+                <Text style={styles.primaryButtonText}>Disconnect</Text>
+              </Pressable>
+            )}
+          </>
         )}
       </View>
 
-      {!isConnected && (
-        <FlatList
-          data={devices}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            connectionState === 'scanning' ? (
-              <Text style={[styles.hint, isDark && styles.textMuted]}>
-                Looking for ServiceTool-* devices…
+      {scannedDevices.map(item => (
+          <Pressable
+            key={item.id}
+            style={[styles.deviceRow, isDark && styles.cardDark]}
+            onPress={() => connect(item.id)}>
+            <View>
+              <Text style={[styles.deviceName, isDark && styles.textLight]}>
+                {item.name ?? 'Unknown'}
               </Text>
-            ) : undefined
-          }
-          renderItem={({item}) => (
-            <Pressable
-              style={[styles.deviceRow, isDark && styles.cardDark]}
-              onPress={() => connect(item.id)}>
-              <View>
-                <Text style={[styles.deviceName, isDark && styles.textLight]}>
-                  {item.name ?? 'Unknown'}
-                </Text>
-                <Text style={[styles.hint, isDark && styles.textMuted]}>
-                  Signal Strength:{' '}
-                  {rssiToSignalStrength(item.rssi) ?? '—'}
-                </Text>
-              </View>
-              <Text style={styles.connectLink}>Connect</Text>
-            </Pressable>
-          )}
-        />
-      )}
+              <Text style={[styles.hint, isDark && styles.textMuted]}>
+                Signal Strength:{' '}
+                {rssiToSignalStrength(item.rssi) ?? '—'}
+              </Text>
+            </View>
+            <Text style={styles.connectLink}>Connect</Text>
+          </Pressable>
+        ))}
+      {connectionState === 'scanning' && devices.length === 0 && (
+          <Text style={[styles.hint, styles.scanHint, isDark && styles.textMuted]}>
+            Looking for ServiceTool-* devices…
+          </Text>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -251,6 +340,10 @@ const styles = StyleSheet.create({
   },
   containerDark: {
     backgroundColor: '#121417',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: 20,
@@ -284,6 +377,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  telemetryCardHeld: {
+    backgroundColor: '#E5E7EB',
+    opacity: 0.55,
+  },
+  telemetryCardHeldDark: {
+    backgroundColor: '#374151',
   },
   cardDark: {
     backgroundColor: '#1F2937',
@@ -327,20 +427,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
-  telemetryMetricsRow: {
+  ppmValueRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     marginTop: 4,
-    gap: 16,
+    gap: 8,
   },
-  telemetrySeparator: {
-    width: 1,
-    alignSelf: 'stretch',
-    minHeight: 32,
-    backgroundColor: '#E5E7EB',
-  },
-  telemetrySeparatorDark: {
-    backgroundColor: '#374151',
+  ppmUnit: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   telemetryDetail: {
     fontSize: 15,
@@ -390,10 +486,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  list: {
+  disabledButton: {
+    opacity: 0.5,
+  },
+  scanHint: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
-    gap: 8,
   },
   deviceRow: {
     flexDirection: 'row',
@@ -404,6 +501,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    marginHorizontal: 20,
     marginBottom: 8,
   },
   deviceName: {

@@ -11,10 +11,25 @@ export type ConnectionState =
   | 'error';
 
 export interface TelemetryPayload {
-  temp: number;
-  rpm: number;
+  ppm: number;
   status: string;
   timestamp: number;
+}
+
+export interface PpmSample {
+  timestamp: number;
+  ppm: number;
+}
+
+export interface SessionGap {
+  at: number;
+  reason: 'disconnect';
+}
+
+export interface SessionCapture {
+  samples: PpmSample[];
+  gaps: SessionGap[];
+  partial: boolean;
 }
 
 export interface ScannedDevice {

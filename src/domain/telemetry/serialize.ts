@@ -4,9 +4,9 @@ import {encodeStringToBase64} from './base64';
 /** Compact JSON keys to minimize BLE packet size. */
 export function serializeTelemetry(payload: TelemetryPayload): string {
   return JSON.stringify({
-    t: payload.temp,
-    r: Math.round(payload.rpm),
+    p: Math.round(payload.ppm),
     s: payload.status === 'running' ? 'run' : payload.status,
+    ts: payload.timestamp,
   });
 }
 
