@@ -171,7 +171,7 @@ OTA / incompatible-version UI is backlog — not a `current` case.
 
 ## Main PPM
 
-Live PPM on Client Mode. This is the stream to check; temperature °C / RPM are retired.
+Live PPM on Client Mode.
 
 ### `main-ppm-live`
 
@@ -179,7 +179,7 @@ Live PPM on Client Mode. This is the stream to check; temperature °C / RPM are 
 |---|---|
 | **Status** | `current` |
 | **Steps** | Tool advertise → Client connect. |
-| **Pass** | **Live PPM** updates ~1 Hz. **MAX** only rises during the connection (resets after a full telemetry drop). Level bar fills (full scale 500 ppm). Tool last-sent shows **N ppm**, not temp/RPM. Mock leak **pulses**: climb ~6–8 s from a low (~8–60) toward a high (~180–500), then snap to a new low. |
+| **Pass** | **Live PPM** updates ~1 Hz. **MAX** only rises during the connection (resets after a full telemetry drop). Level bar fills (full scale 500 ppm). Tool last-sent shows **N ppm**. Mock leak **pulses**: climb ~6–8 s from a low (~8–60) toward a high (~180–500), then snap to a new low. |
 | **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) A + mock pulse |
 
 ### `main-ppm-record-toggle`

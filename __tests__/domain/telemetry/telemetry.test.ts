@@ -86,7 +86,7 @@ describe('domain/telemetry', () => {
 
   /**
    * Regression: default BLE ATT MTU (~20 bytes) truncated JSON mid-field.
-   * Original failure used temp/rpm keys; same parse error applies to ppm JSON.
+   * Same parse error applies to compact ppm JSON.
    */
   describe('regression: mtu truncation', () => {
     it('rejects truncated JSON with a preview in the error', () => {

@@ -6,12 +6,12 @@ import {
 
 describe('domain/telemetry/base64', () => {
   it('round-trips UTF-8 text', () => {
-    const original = '{"t":24.3,"r":1234,"s":"run"}';
+    const original = '{"p":250,"s":"run","ts":1700000000000}';
     expect(decodeBase64ToString(encodeStringToBase64(original))).toBe(original);
   });
 
   it('strips null bytes and whitespace', () => {
-    expect(normalizeBleText('\0{"t":1}\0  ')).toBe('{"t":1}');
+    expect(normalizeBleText('\0{"p":1}\0  ')).toBe('{"p":1}');
   });
 
   it('decodes firmware version strings', () => {
