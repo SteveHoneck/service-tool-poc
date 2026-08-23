@@ -7,14 +7,21 @@ import {
   useColorScheme,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {reportListLabel} from '../../../domain/report/buildSavedReport';
+import {SavedReport} from '../../../types';
 import {BackLink} from '../../shared/BackLink';
 
 interface Props {
+  reports: SavedReport[];
   onBack: () => void;
-  onOpenReport?: () => void;
+  onOpenReport?: (reportId: string) => void;
 }
 
-export default function ReportsListScreen({onBack, onOpenReport}: Props) {
+export default function ReportsListScreen({
+  reports,
+  onBack,
+  onOpenReport,
+}: Props) {
   const isDark = useColorScheme() === 'dark';
 
   return (
@@ -26,21 +33,29 @@ export default function ReportsListScreen({onBack, onOpenReport}: Props) {
         <Text style={[styles.title, isDark && styles.textLight]}>Reports</Text>
       </View>
 
-      <Text style={[styles.empty, isDark && styles.textMuted]}>
-        No saved reports yet
-      </Text>
-
-      <Pressable
-        testID="reports-list-placeholder"
-        accessibilityRole="button"
-        accessibilityLabel="Untitled report"
-        onPress={onOpenReport}
-        style={[styles.row, isDark && styles.rowDark]}>
-        <Text style={[styles.rowLabel, isDark && styles.textLight]}>
-          Untitled report
+      {reports.length === 0 ? (
+        <Text style={[styles.empty, isDark && styles.textMuted]}>
+          No saved reports yet
         </Text>
-        <Text style={styles.rowChevron}>›</Text>
-      </Pressable>
+      ) : (
+        reports.map(report => {
+          const label = reportListLabel(report);
+          return (
+            <Pressable
+              key={report.id}
+              testID={`reports-list-row-${report.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              onPress={() => onOpenReport?.(report.id)}
+              style={[styles.row, isDark && styles.rowDark]}>
+              <Text style={[styles.rowLabel, isDark && styles.textLight]}>
+                {label}
+              </Text>
+              <Text style={styles.rowChevron}>›</Text>
+            </Pressable>
+          );
+        })
+      )}
     </SafeAreaView>
   );
 }
@@ -73,6 +88,7 @@ const styles = StyleSheet.create({
   },
   row: {
     marginHorizontal: 20,
+    marginBottom: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,

@@ -4,6 +4,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import ClientScreen from '../features/client/screens/ClientScreen';
 import SettingsScreen from '../features/client/screens/SettingsScreen';
 import ModeSelectScreen from '../features/mode-select/screens/ModeSelectScreen';
+import {useSavedReports} from '../features/report/hooks/useSavedReports';
 import CreateReportScreen from '../features/report/screens/CreateReportScreen';
 import ReportsListScreen from '../features/report/screens/ReportsListScreen';
 import ReportStubScreen from '../features/report/screens/ReportStubScreen';
@@ -25,6 +26,7 @@ function App() {
   const [reportCapture, setReportCapture] = useState<SessionCapture | null>(
     null,
   );
+  const {state: savedReports, actions: savedReportActions} = useSavedReports();
   const overlayOpen =
     screen === 'create-report' ||
     screen === 'settings' ||
@@ -67,6 +69,7 @@ function App() {
       )}
       {screen === 'reports' && (
         <ReportsListScreen
+          reports={savedReports.reports}
           onBack={() => setScreen('settings')}
           onOpenReport={() => setScreen('report-stub')}
         />
@@ -79,6 +82,11 @@ function App() {
           samples={reportCapture.samples}
           partial={reportCapture.partial}
           onBack={() => setScreen('client')}
+          onSave={fields => {
+            void savedReportActions.save(reportCapture, fields).then(() => {
+              setScreen('reports');
+            });
+          }}
         />
       )}
       {screen === 'tool' && (

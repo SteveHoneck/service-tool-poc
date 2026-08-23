@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen, userEvent} from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import App from '../../src/app/App';
 
 jest.mock('../../src/features/client/screens/ClientScreen', () => {
@@ -17,6 +18,21 @@ jest.mock('../../src/features/client/screens/ClientScreen', () => {
 });
 
 describe('App settings navigation', () => {
+  const memory = new Map<string, string>();
+
+  beforeEach(() => {
+    memory.clear();
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      Promise.resolve(memory.get(key) ?? null),
+    );
+    (AsyncStorage.setItem as jest.Mock).mockImplementation(
+      (key: string, value: string) => {
+        memory.set(key, value);
+        return Promise.resolve();
+      },
+    );
+  });
+
   it('opens Settings from the gear and Back returns to Client', async () => {
     await render(<App />);
     const user = userEvent.setup();
@@ -42,6 +58,8 @@ describe('App settings navigation', () => {
     await user.press(screen.getByTestId('settings-reports'));
 
     expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
+    expect(screen.getByText('No saved reports yet')).toBeOnTheScreen();
+    expect(screen.queryByTestId('reports-list-placeholder')).toBeNull();
     expect(screen.queryByTestId('settings-screen')).toBeNull();
 
     await user.press(screen.getByTestId('reports-list-back'));
@@ -51,22 +69,15 @@ describe('App settings navigation', () => {
     expect(screen.queryByTestId('fake-settings-gear')).toBeNull();
   });
 
-  it('opens the report stub from the list and Back returns to Reports', async () => {
+  it('does not open a report stub from an empty list', async () => {
     await render(<App />);
     const user = userEvent.setup();
 
     await user.press(screen.getByText('Client Mode'));
     await user.press(screen.getByTestId('fake-settings-gear'));
     await user.press(screen.getByTestId('settings-reports'));
-    await user.press(screen.getByTestId('reports-list-placeholder'));
 
-    expect(screen.getByTestId('report-stub-screen')).toBeOnTheScreen();
-    expect(screen.queryByTestId('reports-list-screen')).toBeNull();
-
-    await user.press(screen.getByTestId('report-stub-back'));
-
+    expect(screen.queryByTestId('reports-list-placeholder')).toBeNull();
     expect(screen.queryByTestId('report-stub-screen')).toBeNull();
-    expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
-    expect(screen.queryByTestId('settings-screen')).toBeNull();
   });
 });
