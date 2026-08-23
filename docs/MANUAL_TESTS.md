@@ -179,18 +179,18 @@ These replace temp/RPM on Client Mode. Run on that branch, not `main`.
 | | |
 |---|---|
 | **Status** | `feature/main_screen_ui` |
-| **Steps** | 1. Connect until PPM is live → **Record** enabled. 2. Tap **Record** → **Stop Recording**; tap again → **Record**. 3. Before streaming, Record is visible but not tappable. 4. **BLE off / walk-away / auto-reconnect** while on Stop Recording → button **stays Stop Recording**. 5. Tap **Disconnect** while on Stop Recording → button hides; later reconnect shows **Record**. |
-| **Pass** | All five. BLE-drop must not clear the toggle (reconnect still counts as connected). Explicit Disconnect is a hang-up. |
-| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) B |
+| **Steps** | 1. Idle / scanning: **Record** is not on screen. 2. Connect until PPM is live → **Record** appears, enabled. 3. Tap **Record** → **Stop Recording**. 4. Tap **Stop Recording** → **Create Report** (does **not** toggle back to Record). 5. While the button still reads **Stop Recording** (do not tap it): **BLE off / walk-away / auto-reconnect** → stays **Stop Recording**. 6. Same, but tap **Disconnect** → button hides; later reconnect shows **Record**. |
+| **Pass** | Record only after connect/stream. Stop Recording always leaves Client Mode for Create Report. BLE-drop does not clear an in-progress recording. Explicit Disconnect is a hang-up. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) B/D (device-checked) |
 
 ### `main-ppm-record-log`
 
 | | |
 |---|---|
 | **Status** | `feature/main_screen_ui` |
-| **Steps** | 1. Stream, tap **Record** — sample count shows **1 sample**, then climbs ~1 Hz. 2. **Stop Recording** — count holds while PPM keeps updating. 3. **Record** again — count resets to **1 sample**. 4. Optional: Record, Tool BLE off, then on — count freezes, stays **Stop Recording**, then climbs on the **same** log. |
-| **Pass** | Samples use tool `ts`, not client receive time. No fake 0 ppm during the gap. |
-| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) C |
+| **Steps** | 1. Stream, tap **Record** — sample count shows **1 sample**, then climbs ~1 Hz while PPM keeps updating. 2. Optional: leave it on **Stop Recording**, turn Tool BLE off, then on — count freezes, button stays **Stop Recording**, then climbs on the **same** log. 3. Do **not** expect to tap **Record** again on this screen: **Stop Recording** goes to Create Report. New log = Back from Create Report, then **Record** (see `main-ppm-stop-create-report`). |
+| **Pass** | Samples use tool `ts`, not client receive time. No fake 0 ppm during the gap. Count is only on Client Mode while recording. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) C/D (device-checked) |
 
 ### `main-ppm-stop-create-report`
 
