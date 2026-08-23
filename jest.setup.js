@@ -80,5 +80,6 @@ jest.mock('react-native-svg', () => {
     default: Mock,
     Svg: Mock,
     Polyline: Mock,
+    Line: Mock,
   };
 });

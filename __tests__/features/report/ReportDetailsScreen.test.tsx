@@ -7,11 +7,11 @@ const namedReport: SavedReport = {
   id: 'report-1',
   jobName: 'Leak check',
   operatorName: 'Alex',
-  startedAt: 1,
-  endedAt: 2,
+  startedAt: 0,
+  endedAt: 10_000,
   ppmSamples: [
-    { ppm: 100, timestamp: 1 },
-    { ppm: 180, timestamp: 2 },
+    { ppm: 100, timestamp: 0 },
+    { ppm: 180, timestamp: 10_000 },
   ],
   maxPpm: 180,
   partial: false,
@@ -19,26 +19,48 @@ const namedReport: SavedReport = {
 };
 
 describe('ReportDetailsScreen', () => {
-  it('shows job, operator, last PPM, and MAX', async () => {
+  it('shows Report Details with labeled job, operator, notes, and readings', async () => {
     await render(
       <ReportDetailsScreen report={namedReport} onBack={jest.fn()} />,
     );
 
     expect(screen.getByTestId('report-details-screen')).toBeOnTheScreen();
+    expect(screen.getByText('Report Details')).toBeOnTheScreen();
+    expect(screen.getByText('Job name')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-job-name')).toHaveTextContent(
       'Leak check',
     );
+    expect(screen.getByText('Operator')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-operator')).toHaveTextContent(
       'Alex',
     );
+    expect(screen.getByText('Notes')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-notes')).toHaveTextContent('-');
+    expect(screen.getByText('Last reading')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-last-ppm')).toHaveTextContent(
-      'Last 180 ppm',
+      '180 ppm',
     );
+    expect(screen.getByText('Max. reading')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-max-ppm')).toHaveTextContent(
-      'MAX 180',
+      '180 ppm',
     );
-    expect(screen.queryByTestId('report-details-partial-note')).toBeNull();
     expect(screen.getByTestId('report-details-chart')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-y-high')).toHaveTextContent(
+      '180',
+    );
+    expect(screen.getByTestId('report-details-y-mid')).toHaveTextContent('90');
+    expect(screen.getByTestId('report-details-y-low')).toHaveTextContent('0');
+    expect(screen.getByTestId('report-details-x-start')).toHaveTextContent(
+      '0 s',
+    );
+    expect(screen.getByTestId('report-details-x-mid')).toHaveTextContent('5 s');
+    expect(screen.getByTestId('report-details-x-end')).toHaveTextContent(
+      '10 s',
+    );
+    expect(screen.getByText('PPM')).toBeOnTheScreen();
+    expect(screen.getByText('Time (s)')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-y-axis')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-x-axis')).toBeOnTheScreen();
   });
 
   it('uses Untitled report when the job name is blank', async () => {
@@ -54,7 +76,7 @@ describe('ReportDetailsScreen', () => {
     );
   });
 
-  it('notes when the session ended after a connection loss', async () => {
+  it('shows the connection-lost copy in Notes when the session is partial', async () => {
     await render(
       <ReportDetailsScreen
         report={{ ...namedReport, partial: true }}
@@ -62,12 +84,12 @@ describe('ReportDetailsScreen', () => {
       />,
     );
 
-    expect(screen.getByTestId('report-details-partial-note')).toHaveTextContent(
+    expect(screen.getByTestId('report-details-notes')).toHaveTextContent(
       'Connection lost during session',
     );
   });
 
-  it('shows last PPM as 0 when there are no samples', async () => {
+  it('shows last and max readings as 0 ppm when there are no samples', async () => {
     await render(
       <ReportDetailsScreen
         report={{ ...namedReport, ppmSamples: [], maxPpm: 0 }}
@@ -75,13 +97,21 @@ describe('ReportDetailsScreen', () => {
       />,
     );
 
+    expect(screen.getByText('Last reading')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-last-ppm')).toHaveTextContent(
-      'Last 0 ppm',
+      '0 ppm',
     );
+    expect(screen.getByText('Max. reading')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-max-ppm')).toHaveTextContent(
-      'MAX 0',
+      '0 ppm',
     );
     expect(screen.getByTestId('report-details-chart')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-y-high')).toHaveTextContent('0');
+    expect(screen.getByTestId('report-details-x-end')).toHaveTextContent('0 s');
+    expect(screen.getByText('PPM')).toBeOnTheScreen();
+    expect(screen.getByText('Time (s)')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-y-axis')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-x-axis')).toBeOnTheScreen();
   });
 
   it('calls onBack when Back is pressed', async () => {

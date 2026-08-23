@@ -299,8 +299,8 @@ Live PPM on Client Mode.
 |---|---|
 | **Status** | `feature/report_details` |
 | **Setup** | Client Mode. A report already saved (`create-report-save-list`). Optional: streaming. Native rebuild after adding `react-native-svg`. |
-| **Steps** | Gear → Settings → Reports → tap the saved job name (or **Untitled report** if the job name was blank). Confirm job name, operator, last PPM, MAX, and a simple session graph. If the session was partial, confirm **Connection lost during session**. Tap **Back**. |
-| **Pass** | Details open from the **saved** row with job / operator / last / MAX (and the partial note when relevant) plus the graph. Back returns to **Reports** (not Settings). If you were streaming, BLE did not drop. |
+| **Steps** | Gear → Settings → Reports → tap the saved job name (or **Untitled report** if the job name was blank). Confirm title **Report Details**, **Job name**, **Operator**, **Notes** (`-` or **Connection lost during session**), **Last reading**, **Max. reading**, and a session graph with **PPM** / **Time (s)** axis labels, drawn X and Y axes, Y low/mid/high ticks, and X 0 / mid / end seconds. Tap **Back**. |
+| **Pass** | Details open from the **saved** row with those labeled fields (and the connection-lost note when relevant) plus X/Y axes and axis labels on the graph. Back returns to **Reports** (not Settings). If you were streaming, BLE did not drop. |
 | **Source** | Report details screen; [Settings screen feature branch](fe8505e7-d9fc-41ab-895a-950d083b2b76) |
 
 ---

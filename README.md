@@ -29,7 +29,7 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
    - Firmware badge shows `1.2.0 — Compatible`
    - **Record** → **Stop Recording** opens **Create Report** (sample count, last PPM, MAX, job name, operator)
    - **Save Report** writes the session and opens the **Reports** list; **Back** without Save discards
-   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for job, operator, last/MAX PPM, and a simple session graph
+   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for **Report Details** (job name, operator, notes, last/max reading, session graph)
    - Back walks details → Reports → Settings → Client (BLE stays up)
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count

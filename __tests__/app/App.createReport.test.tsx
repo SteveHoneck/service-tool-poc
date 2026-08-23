@@ -134,8 +134,9 @@ describe('App create report navigation', () => {
     expect(screen.getByTestId('report-details-job-name')).toHaveTextContent(
       'Leak check',
     );
+    expect(screen.getByText('Last reading')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-last-ppm')).toHaveTextContent(
-      'Last 100 ppm',
+      '100 ppm',
     );
 
     await user.press(screen.getByTestId('report-details-back'));

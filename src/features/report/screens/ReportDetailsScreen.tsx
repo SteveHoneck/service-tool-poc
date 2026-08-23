@@ -24,40 +24,54 @@ export default function ReportDetailsScreen({ report, onBack }: Props) {
     >
       <View style={styles.header}>
         <BackLink onPress={onBack} testID="report-details-back" />
-        <Text
-          testID="report-details-job-name"
-          style={[styles.title, isDark && styles.textLight]}
-        >
-          {reportListLabel(report)}
+        <Text style={[styles.title, isDark && styles.textLight]}>
+          Report Details
         </Text>
       </View>
 
       <View style={[styles.card, isDark && styles.cardDark]}>
         <Text
+          style={[styles.label, styles.firstLabel, isDark && styles.textMuted]}
+        >
+          Job name
+        </Text>
+        <Text
+          testID="report-details-job-name"
+          style={[styles.body, isDark && styles.textLight]}
+        >
+          {reportListLabel(report)}
+        </Text>
+        <Text style={[styles.label, isDark && styles.textMuted]}>Operator</Text>
+        <Text
           testID="report-details-operator"
-          style={[styles.body, isDark && styles.textMuted]}
+          style={[styles.body, isDark && styles.textLight]}
         >
           {report.operatorName}
         </Text>
-        {report.partial && (
-          <Text
-            testID="report-details-partial-note"
-            style={[styles.body, isDark && styles.textMuted]}
-          >
-            Connection lost during session
-          </Text>
-        )}
+        <Text style={[styles.label, isDark && styles.textMuted]}>Notes</Text>
+        <Text
+          testID="report-details-notes"
+          style={[styles.body, isDark && styles.textLight]}
+        >
+          {report.partial ? 'Connection lost during session' : '-'}
+        </Text>
+        <Text style={[styles.label, isDark && styles.textMuted]}>
+          Last reading
+        </Text>
         <Text
           testID="report-details-last-ppm"
-          style={[styles.body, isDark && styles.textMuted]}
+          style={[styles.body, isDark && styles.textLight]}
         >
-          Last {lastPpm(report.ppmSamples)} ppm
+          {lastPpm(report.ppmSamples)} ppm
+        </Text>
+        <Text style={[styles.label, isDark && styles.textMuted]}>
+          Max. reading
         </Text>
         <Text
           testID="report-details-max-ppm"
-          style={[styles.body, isDark && styles.textMuted]}
+          style={[styles.body, isDark && styles.textLight]}
         >
-          MAX {report.maxPpm}
+          {report.maxPpm} ppm
         </Text>
       </View>
 
@@ -95,15 +109,23 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    gap: 8,
+    gap: 4,
   },
   cardDark: {
     backgroundColor: '#1F2937',
     borderColor: '#374151',
   },
+  label: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  firstLabel: {
+    marginTop: 0,
+  },
   body: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#111827',
     lineHeight: 22,
   },
   textLight: {
