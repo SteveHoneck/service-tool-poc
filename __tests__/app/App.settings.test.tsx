@@ -1,5 +1,6 @@
 import React from 'react';
 import {render, screen, userEvent} from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import App from '../../src/app/App';
 
 jest.mock('../../src/features/client/screens/ClientScreen', () => {
@@ -17,6 +18,21 @@ jest.mock('../../src/features/client/screens/ClientScreen', () => {
 });
 
 describe('App settings navigation', () => {
+  const memory = new Map<string, string>();
+
+  beforeEach(() => {
+    memory.clear();
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      Promise.resolve(memory.get(key) ?? null),
+    );
+    (AsyncStorage.setItem as jest.Mock).mockImplementation(
+      (key: string, value: string) => {
+        memory.set(key, value);
+        return Promise.resolve();
+      },
+    );
+  });
+
   it('opens Settings from the gear and Back returns to Client', async () => {
     await render(<App />);
     const user = userEvent.setup();

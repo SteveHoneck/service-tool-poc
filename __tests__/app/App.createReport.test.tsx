@@ -1,5 +1,6 @@
 import React from 'react';
-import {render, screen, userEvent} from '@testing-library/react-native';
+import {render, screen, userEvent, waitFor} from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import App from '../../src/app/App';
 import {SessionCapture} from '../../src/types';
 
@@ -9,31 +10,66 @@ jest.mock('../../src/features/client/screens/ClientScreen', () => {
     __esModule: true,
     default: ({
       onCreateReport,
+      onOpenSettings,
     }: {
       onCreateReport: (capture: SessionCapture) => void;
+      onOpenSettings: () => void;
     }) => (
-      <ReactNative.Pressable
-        testID="fake-stop-recording"
-        onPress={() =>
-          onCreateReport({
-            samples: [{ppm: 100, timestamp: 1}],
-            gaps: [{at: 1, reason: 'disconnect'}],
-            partial: true,
-          })
-        }>
-        <ReactNative.Text>Stop Recording</ReactNative.Text>
-      </ReactNative.Pressable>
+      <>
+        <ReactNative.Pressable
+          testID="fake-stop-recording"
+          onPress={() =>
+            onCreateReport({
+              samples: [{ppm: 100, timestamp: 1}],
+              gaps: [{at: 1, reason: 'disconnect'}],
+              partial: true,
+            })
+          }>
+          <ReactNative.Text>Stop Recording</ReactNative.Text>
+        </ReactNative.Pressable>
+        <ReactNative.Pressable
+          testID="fake-settings-gear"
+          onPress={onOpenSettings}>
+          <ReactNative.Text>Settings gear</ReactNative.Text>
+        </ReactNative.Pressable>
+      </>
     ),
   };
 });
 
 describe('App create report navigation', () => {
-  it('opens Create Report with the partial-session note', async () => {
-    await render(<App />);
-    const user = userEvent.setup();
+  const memory = new Map<string, string>();
 
+  beforeEach(() => {
+    memory.clear();
+    (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      Promise.resolve(memory.get(key) ?? null),
+    );
+    (AsyncStorage.setItem as jest.Mock).mockImplementation(
+      (key: string, value: string) => {
+        memory.set(key, value);
+        return Promise.resolve();
+      },
+    );
+  });
+
+  afterEach(() => {
+    (AsyncStorage.getItem as jest.Mock).mockReset();
+    (AsyncStorage.setItem as jest.Mock).mockReset();
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+    (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  async function openCreateReport() {
+    const user = userEvent.setup();
+    await render(<App />);
     await user.press(screen.getByText('Client Mode'));
     await user.press(screen.getByTestId('fake-stop-recording'));
+    return user;
+  }
+
+  it('opens Create Report with the partial-session note', async () => {
+    await openCreateReport();
 
     expect(screen.getByTestId('create-report-screen')).toBeOnTheScreen();
     expect(screen.getByTestId('create-report-partial-note')).toHaveTextContent(
@@ -42,5 +78,55 @@ describe('App create report navigation', () => {
     expect(screen.getByTestId('create-report-sample-count')).toHaveTextContent(
       '1 sample captured',
     );
+  });
+
+  it('saves a report and shows it on the Reports list', async () => {
+    const user = await openCreateReport();
+
+    await user.type(screen.getByTestId('create-report-job-name'), 'Leak check');
+    await user.press(screen.getByTestId('create-report-save'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
+    });
+    expect(screen.getByText('Leak check')).toBeOnTheScreen();
+    expect(screen.queryByText('No saved reports yet')).toBeNull();
+    expect(screen.queryByTestId('create-report-screen')).toBeNull();
+  });
+
+  it('does not persist a report when Back is pressed without Save', async () => {
+    const user = await openCreateReport();
+
+    await user.type(screen.getByTestId('create-report-job-name'), 'Leak check');
+    await user.press(screen.getByTestId('create-report-back'));
+    await user.press(screen.getByTestId('fake-settings-gear'));
+    await user.press(screen.getByTestId('settings-reports'));
+
+    expect(screen.getByText('No saved reports yet')).toBeOnTheScreen();
+    expect(screen.queryByText('Leak check')).toBeNull();
+  });
+
+  it('keeps the saved row through Settings and opens the stub from it', async () => {
+    const user = await openCreateReport();
+
+    await user.type(screen.getByTestId('create-report-job-name'), 'Leak check');
+    await user.press(screen.getByTestId('create-report-save'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Leak check')).toBeOnTheScreen();
+    });
+
+    await user.press(screen.getByTestId('reports-list-back'));
+    expect(screen.getByTestId('settings-screen')).toBeOnTheScreen();
+
+    await user.press(screen.getByTestId('settings-reports'));
+    expect(screen.getByText('Leak check')).toBeOnTheScreen();
+
+    await user.press(screen.getByText('Leak check'));
+    expect(screen.getByTestId('report-stub-screen')).toBeOnTheScreen();
+
+    await user.press(screen.getByTestId('report-stub-back'));
+    expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
+    expect(screen.getByText('Leak check')).toBeOnTheScreen();
   });
 });
