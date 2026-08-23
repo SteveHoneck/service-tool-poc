@@ -58,6 +58,15 @@ describe('ClientScreen', () => {
     jest.restoreAllMocks();
   });
 
+  it('shows a settings gear on the main screen', async () => {
+    mockClient();
+
+    await render(<ClientScreen onBack={jest.fn()} onCreateReport={jest.fn()} />);
+
+    expect(screen.getByTestId('settings-gear')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Settings')).toBeOnTheScreen();
+  });
+
   it('should display the current reconnect attempt out of the total retry limit', async () => {
     mockClient({
       connectionState: 'reconnecting',

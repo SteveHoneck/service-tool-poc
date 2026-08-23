@@ -145,9 +145,21 @@ export default function ClientScreen({onBack, onCreateReport}: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>← Back</Text>
-        </Pressable>
+        <View style={styles.headerRow}>
+          <Pressable onPress={onBack} style={styles.headerControl}>
+            <View style={styles.backRow}>
+              <Text style={styles.backArrow}>←</Text>
+              <Text style={styles.backLink}>Back</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            testID="settings-gear"
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+            style={styles.headerControl}>
+            <Text style={[styles.gear, isDark && styles.textLight]}>⚙</Text>
+          </Pressable>
+        </View>
         <Text style={[styles.title, isDark && styles.textLight]}>
           Client Mode
         </Text>
@@ -350,10 +362,44 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 40,
+    marginBottom: 8,
+  },
+  headerControl: {
+    height: 40,
+    justifyContent: 'center',
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backArrow: {
+    color: '#2563EB',
+    fontSize: 26,
+    lineHeight: 26,
+    fontWeight: '700',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    transform: [{translateY: -5}],
+    marginRight: 4,
+  },
   backLink: {
     color: '#2563EB',
-    fontSize: 16,
-    marginBottom: 8,
+    fontSize: 18,
+    lineHeight: 22,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  gear: {
+    color: '#111827',
+    fontSize: 34,
+    lineHeight: 40,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   title: {
     fontSize: 24,
