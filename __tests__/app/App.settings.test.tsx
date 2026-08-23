@@ -32,4 +32,22 @@ describe('App settings navigation', () => {
     expect(screen.queryByTestId('settings-screen')).toBeNull();
     expect(screen.getByTestId('fake-settings-gear')).toBeOnTheScreen();
   });
+
+  it('opens Reports from Settings and Back returns to Settings', async () => {
+    await render(<App />);
+    const user = userEvent.setup();
+
+    await user.press(screen.getByText('Client Mode'));
+    await user.press(screen.getByTestId('fake-settings-gear'));
+    await user.press(screen.getByTestId('settings-reports'));
+
+    expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
+    expect(screen.queryByTestId('settings-screen')).toBeNull();
+
+    await user.press(screen.getByTestId('reports-list-back'));
+
+    expect(screen.queryByTestId('reports-list-screen')).toBeNull();
+    expect(screen.getByTestId('settings-screen')).toBeOnTheScreen();
+    expect(screen.queryByTestId('fake-settings-gear')).toBeNull();
+  });
 });

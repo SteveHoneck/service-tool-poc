@@ -5,6 +5,7 @@ import ClientScreen from '../features/client/screens/ClientScreen';
 import SettingsScreen from '../features/client/screens/SettingsScreen';
 import ModeSelectScreen from '../features/mode-select/screens/ModeSelectScreen';
 import CreateReportScreen from '../features/report/screens/CreateReportScreen';
+import ReportsListScreen from '../features/report/screens/ReportsListScreen';
 import ToolScreen from '../features/tool/screens/ToolScreen';
 import {SessionCapture} from '../types';
 
@@ -13,7 +14,8 @@ type Screen =
   | 'client'
   | 'tool'
   | 'create-report'
-  | 'settings';
+  | 'settings'
+  | 'reports';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -21,7 +23,10 @@ function App() {
   const [reportCapture, setReportCapture] = useState<SessionCapture | null>(
     null,
   );
-  const overlayOpen = screen === 'create-report' || screen === 'settings';
+  const overlayOpen =
+    screen === 'create-report' ||
+    screen === 'settings' ||
+    screen === 'reports';
   const clientMounted = screen === 'client' || overlayOpen;
 
   return (
@@ -52,7 +57,13 @@ function App() {
         </View>
       )}
       {screen === 'settings' && (
-        <SettingsScreen onBack={() => setScreen('client')} />
+        <SettingsScreen
+          onBack={() => setScreen('client')}
+          onOpenReports={() => setScreen('reports')}
+        />
+      )}
+      {screen === 'reports' && (
+        <ReportsListScreen onBack={() => setScreen('settings')} />
       )}
       {screen === 'create-report' && reportCapture && (
         <CreateReportScreen
