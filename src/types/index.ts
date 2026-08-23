@@ -32,6 +32,23 @@ export interface SessionCapture {
   partial: boolean;
 }
 
+export interface SavedReportFields {
+  jobName: string;
+  operatorName: string;
+}
+
+export interface SavedReport {
+  id: string;
+  jobName: string;
+  operatorName: string;
+  startedAt: number;
+  endedAt: number;
+  ppmSamples: PpmSample[];
+  maxPpm: number;
+  partial: boolean;
+  gaps: SessionGap[];
+}
+
 export interface ScannedDevice {
   id: string;
   name: string | null;
