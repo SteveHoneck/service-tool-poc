@@ -261,6 +261,40 @@ Live PPM on Client Mode.
 
 ---
 
+## Settings
+
+### `settings-from-main-gear`
+
+| | |
+|---|---|
+| **Status** | `feature/settings_screen` |
+| **Setup** | Client Mode. Optional: streaming. |
+| **Steps** | Tap the **⚙** gear. Confirm **Settings**. Tap **Back**. |
+| **Pass** | Gear opens Settings. Back returns to Client Mode (not Mode Select). If you were streaming, live PPM is still updating — BLE did not drop. |
+| **Source** | [Settings screen feature branch](fe8505e7-d9fc-41ab-895a-950d083b2b76) |
+
+### `settings-to-reports-list`
+
+| | |
+|---|---|
+| **Status** | `feature/settings_screen` |
+| **Setup** | Client Mode. Optional: streaming. |
+| **Steps** | Gear → **Settings** → **Reports**. Confirm **Reports** list, **No saved reports yet**, and the **Untitled report** placeholder row. Tap **Back**. |
+| **Pass** | Reports list opens from Settings. Back returns to **Settings** (not Main). If you were streaming, BLE did not drop. |
+| **Source** | [Settings screen feature branch](fe8505e7-d9fc-41ab-895a-950d083b2b76) |
+
+### `reports-list-to-report-stub`
+
+| | |
+|---|---|
+| **Status** | `feature/settings_screen` |
+| **Setup** | Client Mode. Optional: streaming. |
+| **Steps** | Gear → Settings → Reports → **Untitled report**. Confirm the stub (**Report details are not implemented yet.**). Tap **Back**. |
+| **Pass** | Stub opens from the list. Back returns to **Reports** (not Settings). If you were streaming, BLE did not drop. |
+| **Source** | [Settings screen feature branch](fe8505e7-d9fc-41ab-895a-950d083b2b76) |
+
+---
+
 ## Planned (do not run as current)
 
 ### `create-report-save-list-pdf`

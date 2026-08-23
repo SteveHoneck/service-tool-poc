@@ -20,6 +20,7 @@ import {
 import {nextMaxPpm, ppmLevelFraction} from '../../../domain/signals/ppm';
 import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
 import {ConnectionState, SessionCapture} from '../../../types';
+import {BackLink} from '../../shared/BackLink';
 import {LivePpmLevelBar} from '../components/LivePpmLevelBar';
 import {useBleClient} from '../hooks/useBleClient';
 import {useRecordingSession} from '../hooks/useRecordingSession';
@@ -27,6 +28,7 @@ import {useRecordingSession} from '../hooks/useRecordingSession';
 interface Props {
   onBack: () => void;
   onCreateReport: (capture: SessionCapture) => void;
+  onOpenSettings?: () => void;
 }
 
 function stateLabel(state: ConnectionState): string {
@@ -68,7 +70,11 @@ function firmwareBadgeLabel(
   return `Firmware ${version} — ${status}`;
 }
 
-export default function ClientScreen({onBack, onCreateReport}: Props) {
+export default function ClientScreen({
+  onBack,
+  onCreateReport,
+  onOpenSettings,
+}: Props) {
   const isDark = useColorScheme() === 'dark';
   const {
     connectionState,
@@ -145,9 +151,17 @@ export default function ClientScreen({onBack, onCreateReport}: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
-          <Text style={styles.backLink}>← Back</Text>
-        </Pressable>
+        <View style={styles.headerRow}>
+          <BackLink onPress={onBack} />
+          <Pressable
+            testID="settings-gear"
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+            style={styles.headerControl}
+            onPress={onOpenSettings}>
+            <Text style={[styles.gear, isDark && styles.textLight]}>⚙</Text>
+          </Pressable>
+        </View>
         <Text style={[styles.title, isDark && styles.textLight]}>
           Client Mode
         </Text>
@@ -350,10 +364,23 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
   },
-  backLink: {
-    color: '#2563EB',
-    fontSize: 16,
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 40,
     marginBottom: 8,
+  },
+  headerControl: {
+    height: 40,
+    justifyContent: 'center',
+  },
+  gear: {
+    color: '#111827',
+    fontSize: 34,
+    lineHeight: 40,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   title: {
     fontSize: 24,
