@@ -1,15 +1,15 @@
-import React, {useState} from 'react';
-import {StatusBar, StyleSheet, View, useColorScheme} from 'react-native';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { StatusBar, StyleSheet, View, useColorScheme } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ClientScreen from '../features/client/screens/ClientScreen';
 import SettingsScreen from '../features/client/screens/SettingsScreen';
 import ModeSelectScreen from '../features/mode-select/screens/ModeSelectScreen';
-import {useSavedReports} from '../features/report/hooks/useSavedReports';
+import { useSavedReports } from '../features/report/hooks/useSavedReports';
 import CreateReportScreen from '../features/report/screens/CreateReportScreen';
+import ReportDetailsScreen from '../features/report/screens/ReportDetailsScreen';
 import ReportsListScreen from '../features/report/screens/ReportsListScreen';
-import ReportStubScreen from '../features/report/screens/ReportStubScreen';
 import ToolScreen from '../features/tool/screens/ToolScreen';
-import {SessionCapture} from '../types';
+import { SessionCapture } from '../types';
 
 type Screen =
   | 'mode-select'
@@ -18,7 +18,7 @@ type Screen =
   | 'create-report'
   | 'settings'
   | 'reports'
-  | 'report-stub';
+  | 'report-details';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -26,12 +26,17 @@ function App() {
   const [reportCapture, setReportCapture] = useState<SessionCapture | null>(
     null,
   );
-  const {state: savedReports, actions: savedReportActions} = useSavedReports();
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const { state: savedReports, actions: savedReportActions } =
+    useSavedReports();
+  const selectedReport = savedReports.reports.find(
+    report => report.id === selectedReportId,
+  );
   const overlayOpen =
     screen === 'create-report' ||
     screen === 'settings' ||
     screen === 'reports' ||
-    screen === 'report-stub';
+    screen === 'report-details';
   const clientMounted = screen === 'client' || overlayOpen;
 
   return (
@@ -50,7 +55,8 @@ function App() {
           accessibilityElementsHidden={overlayOpen}
           importantForAccessibility={
             overlayOpen ? 'no-hide-descendants' : 'auto'
-          }>
+          }
+        >
           <ClientScreen
             onBack={() => setScreen('mode-select')}
             onOpenSettings={() => setScreen('settings')}
@@ -71,11 +77,23 @@ function App() {
         <ReportsListScreen
           reports={savedReports.reports}
           onBack={() => setScreen('settings')}
-          onOpenReport={() => setScreen('report-stub')}
+          onOpenReport={reportId => {
+            const exists = savedReports.reports.some(
+              report => report.id === reportId,
+            );
+            if (!exists) {
+              return;
+            }
+            setSelectedReportId(reportId);
+            setScreen('report-details');
+          }}
         />
       )}
-      {screen === 'report-stub' && (
-        <ReportStubScreen onBack={() => setScreen('reports')} />
+      {screen === 'report-details' && selectedReport && (
+        <ReportDetailsScreen
+          report={selectedReport}
+          onBack={() => setScreen('reports')}
+        />
       )}
       {screen === 'create-report' && reportCapture && (
         <CreateReportScreen
