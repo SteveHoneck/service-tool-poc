@@ -38,6 +38,7 @@ describe('ReportDetailsScreen', () => {
       'MAX 180',
     );
     expect(screen.queryByTestId('report-details-partial-note')).toBeNull();
+    expect(screen.getByTestId('report-details-chart')).toBeOnTheScreen();
   });
 
   it('uses Untitled report when the job name is blank', async () => {
@@ -80,6 +81,7 @@ describe('ReportDetailsScreen', () => {
     expect(screen.getByTestId('report-details-max-ppm')).toHaveTextContent(
       'MAX 0',
     );
+    expect(screen.getByTestId('report-details-chart')).toBeOnTheScreen();
   });
 
   it('calls onBack when Back is pressed', async () => {

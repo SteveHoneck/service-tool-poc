@@ -7,6 +7,7 @@ import {
 } from '../../../domain/report/buildSavedReport';
 import { SavedReport } from '../../../types';
 import { BackLink } from '../../shared/BackLink';
+import { SessionPpmChart } from '../components/SessionPpmChart';
 
 interface Props {
   report: SavedReport;
@@ -58,6 +59,10 @@ export default function ReportDetailsScreen({ report, onBack }: Props) {
         >
           MAX {report.maxPpm}
         </Text>
+      </View>
+
+      <View style={[styles.card, isDark && styles.cardDark]}>
+        <SessionPpmChart samples={report.ppmSamples} isDark={isDark} />
       </View>
     </SafeAreaView>
   );
