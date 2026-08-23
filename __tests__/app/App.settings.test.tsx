@@ -1,5 +1,5 @@
 import React from 'react';
-import {render, screen, userEvent} from '@testing-library/react-native';
+import { render, screen, userEvent } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import App from '../../src/app/App';
 
@@ -7,10 +7,11 @@ jest.mock('../../src/features/client/screens/ClientScreen', () => {
   const ReactNative = require('react-native');
   return {
     __esModule: true,
-    default: ({onOpenSettings}: {onOpenSettings: () => void}) => (
+    default: ({ onOpenSettings }: { onOpenSettings: () => void }) => (
       <ReactNative.Pressable
         testID="fake-settings-gear"
-        onPress={onOpenSettings}>
+        onPress={onOpenSettings}
+      >
         <ReactNative.Text>Settings gear</ReactNative.Text>
       </ReactNative.Pressable>
     ),
@@ -69,7 +70,7 @@ describe('App settings navigation', () => {
     expect(screen.queryByTestId('fake-settings-gear')).toBeNull();
   });
 
-  it('does not open a report stub from an empty list', async () => {
+  it('does not open report details from an empty list', async () => {
     await render(<App />);
     const user = userEvent.setup();
 
@@ -78,6 +79,6 @@ describe('App settings navigation', () => {
     await user.press(screen.getByTestId('settings-reports'));
 
     expect(screen.queryByTestId('reports-list-placeholder')).toBeNull();
-    expect(screen.queryByTestId('report-stub-screen')).toBeNull();
+    expect(screen.queryByTestId('report-details-screen')).toBeNull();
   });
 });

@@ -1,5 +1,10 @@
-import {nextMaxPpm} from '../signals/ppm';
-import {SavedReport, SavedReportFields, SessionCapture} from '../../types';
+import { nextMaxPpm } from '../signals/ppm';
+import {
+  PpmSample,
+  SavedReport,
+  SavedReportFields,
+  SessionCapture,
+} from '../../types';
 
 export function buildSavedReport(
   capture: SessionCapture,
@@ -25,4 +30,9 @@ export function buildSavedReport(
 
 export function reportListLabel(report: Pick<SavedReport, 'jobName'>): string {
   return report.jobName === '' ? 'Untitled report' : report.jobName;
+}
+
+export function lastPpm(samples: PpmSample[]): number {
+  const last = samples[samples.length - 1];
+  return last?.ppm ?? 0;
 }

@@ -29,7 +29,8 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
    - Firmware badge shows `1.2.0 — Compatible`
    - **Record** → **Stop Recording** opens **Create Report** (sample count, last PPM, MAX, job name, operator)
    - **Save Report** writes the session and opens the **Reports** list; **Back** without Save discards
-   - Gear → **Settings** → **Reports** shows the same list; Back walks Reports → Settings → Client (BLE stays up)
+   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for **Report Details** (job name, operator, notes, last/max reading, session graph)
+   - Back walks details → Reports → Settings → Client (BLE stays up)
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count
    - Toggle Bluetooth back on, restart App in Tool mode, **Start Advertising** → auto-reconnects and resumes streaming
@@ -84,7 +85,7 @@ src/
     client/               Client Mode, Settings, recording orchestration
     tool/                 Tool Mode screens, hooks
     mode-select/          Mode picker screen
-    report/               Create Report, Reports list, report stub
+    report/               Create Report, Reports list, report details, session chart
     shared/               Shared UI (BackLink)
   domain/
     telemetry/            Parse/serialize, wire format
@@ -92,7 +93,7 @@ src/
     device/               UUID helpers, firmware compatibility
     signals/              RSSI → strength, PPM math
     session/              Recording capture / gaps
-    report/               Build saved report, list label
+    report/               Build saved report, list label, last PPM, plot points
   services/
     ble/                  Central/peripheral adapters, scan, constants
     storage/              Last device id, saved-report list
@@ -116,7 +117,6 @@ docs/
 
 ## Backlog
 
-- **Report details** — replace `ReportStubScreen` with job, operator, last/MAX PPM, and a simple session graph
 - **PDF** — basic PDF + share sheet from a saved report (not mailto attachment)
 - **Settings stretch** — instrument name, Disconnect, firmware OTA, location, sound
 - **NFC bootstrap** — NTAG213 sticker with NDEF pairing payload

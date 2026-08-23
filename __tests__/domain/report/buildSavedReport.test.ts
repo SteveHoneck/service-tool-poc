@@ -1,16 +1,17 @@
 import {
   buildSavedReport,
+  lastPpm,
   reportListLabel,
 } from '../../../src/domain/report/buildSavedReport';
-import {SessionCapture} from '../../../src/types';
+import { SessionCapture } from '../../../src/types';
 
 const capture: SessionCapture = {
   samples: [
-    {ppm: 100, timestamp: 1_000},
-    {ppm: 250, timestamp: 2_000},
-    {ppm: 180, timestamp: 3_000},
+    { ppm: 100, timestamp: 1_000 },
+    { ppm: 250, timestamp: 2_000 },
+    { ppm: 180, timestamp: 3_000 },
   ],
-  gaps: [{at: 2_000, reason: 'disconnect'}],
+  gaps: [{ at: 2_000, reason: 'disconnect' }],
   partial: true,
 };
 
@@ -18,7 +19,7 @@ describe('buildSavedReport', () => {
   it('copies samples, gaps, and partial, and derives maxPpm and timestamps', () => {
     const report = buildSavedReport(
       capture,
-      {jobName: 'Leak check', operatorName: 'Alex'},
+      { jobName: 'Leak check', operatorName: 'Alex' },
       9_999,
     );
 
@@ -38,7 +39,7 @@ describe('buildSavedReport', () => {
   it('trims job and operator names', () => {
     const report = buildSavedReport(
       capture,
-      {jobName: '  Job A  ', operatorName: '  Sam  '},
+      { jobName: '  Job A  ', operatorName: '  Sam  ' },
       1,
     );
 
@@ -49,7 +50,7 @@ describe('buildSavedReport', () => {
   it('stores a blank job name as empty after trim', () => {
     const report = buildSavedReport(
       capture,
-      {jobName: '   ', operatorName: '  '},
+      { jobName: '   ', operatorName: '  ' },
       1,
     );
 
@@ -59,8 +60,8 @@ describe('buildSavedReport', () => {
 
   it('uses now for timestamps and 0 maxPpm when there are no samples', () => {
     const report = buildSavedReport(
-      {samples: [], gaps: [], partial: false},
-      {jobName: 'Empty', operatorName: 'Pat'},
+      { samples: [], gaps: [], partial: false },
+      { jobName: 'Empty', operatorName: 'Pat' },
       42,
     );
 
@@ -75,7 +76,7 @@ describe('reportListLabel', () => {
   it('uses the job name when it is present', () => {
     const report = buildSavedReport(
       capture,
-      {jobName: 'Leak check', operatorName: 'Alex'},
+      { jobName: 'Leak check', operatorName: 'Alex' },
       1,
     );
 
@@ -85,10 +86,20 @@ describe('reportListLabel', () => {
   it('uses Untitled report when the job name is blank', () => {
     const report = buildSavedReport(
       capture,
-      {jobName: '  ', operatorName: 'Alex'},
+      { jobName: '  ', operatorName: 'Alex' },
       1,
     );
 
     expect(reportListLabel(report)).toBe('Untitled report');
+  });
+});
+
+describe('lastPpm', () => {
+  it('returns the last sample ppm', () => {
+    expect(lastPpm(capture.samples)).toBe(180);
+  });
+
+  it('returns 0 when there are no samples', () => {
+    expect(lastPpm([])).toBe(0);
   });
 });
