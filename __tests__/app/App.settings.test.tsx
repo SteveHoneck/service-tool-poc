@@ -42,6 +42,8 @@ describe('App settings navigation', () => {
     await user.press(screen.getByTestId('settings-reports'));
 
     expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
+    expect(screen.getByText('No saved reports yet')).toBeOnTheScreen();
+    expect(screen.queryByTestId('reports-list-placeholder')).toBeNull();
     expect(screen.queryByTestId('settings-screen')).toBeNull();
 
     await user.press(screen.getByTestId('reports-list-back'));
@@ -51,22 +53,15 @@ describe('App settings navigation', () => {
     expect(screen.queryByTestId('fake-settings-gear')).toBeNull();
   });
 
-  it('opens the report stub from the list and Back returns to Reports', async () => {
+  it('does not open a report stub from an empty list', async () => {
     await render(<App />);
     const user = userEvent.setup();
 
     await user.press(screen.getByText('Client Mode'));
     await user.press(screen.getByTestId('fake-settings-gear'));
     await user.press(screen.getByTestId('settings-reports'));
-    await user.press(screen.getByTestId('reports-list-placeholder'));
 
-    expect(screen.getByTestId('report-stub-screen')).toBeOnTheScreen();
-    expect(screen.queryByTestId('reports-list-screen')).toBeNull();
-
-    await user.press(screen.getByTestId('report-stub-back'));
-
+    expect(screen.queryByTestId('reports-list-placeholder')).toBeNull();
     expect(screen.queryByTestId('report-stub-screen')).toBeNull();
-    expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
-    expect(screen.queryByTestId('settings-screen')).toBeNull();
   });
 });

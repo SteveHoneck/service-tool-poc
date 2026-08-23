@@ -67,6 +67,7 @@ function App() {
       )}
       {screen === 'reports' && (
         <ReportsListScreen
+          reports={[]}
           onBack={() => setScreen('settings')}
           onOpenReport={() => setScreen('report-stub')}
         />
