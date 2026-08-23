@@ -79,6 +79,7 @@ function App() {
           samples={reportCapture.samples}
           partial={reportCapture.partial}
           onBack={() => setScreen('client')}
+          onSave={() => {}}
         />
       )}
       {screen === 'tool' && (
