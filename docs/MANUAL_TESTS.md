@@ -267,7 +267,7 @@ Live PPM on Client Mode.
 
 | | |
 |---|---|
-| **Status** | `feature/settings_screen` |
+| **Status** | `current` |
 | **Setup** | Client Mode. Optional: streaming. |
 | **Steps** | Tap the **⚙** gear. Confirm **Settings**. Tap **Back**. |
 | **Pass** | Gear opens Settings. Back returns to Client Mode (not Mode Select). If you were streaming, live PPM is still updating — BLE did not drop. |
@@ -277,7 +277,7 @@ Live PPM on Client Mode.
 
 | | |
 |---|---|
-| **Status** | `feature/create_report_1` |
+| **Status** | `current` |
 | **Setup** | Client Mode. Optional: streaming. No saved reports. |
 | **Steps** | Gear → **Settings** → **Reports**. Confirm **Reports** list and **No saved reports yet**. There is **no** Untitled placeholder row. Tap **Back**. |
 | **Pass** | Reports list opens from Settings. Empty copy only. Back returns to **Settings** (not Main). If you were streaming, BLE did not drop. |
@@ -287,17 +287,17 @@ Live PPM on Client Mode.
 
 | | |
 |---|---|
-| **Status** | `feature/create_report_1` |
+| **Status** | `current` |
 | **Setup** | Tool advertising. Client streaming. |
 | **Steps** | 1. **Record** a few samples. 2. **Stop Recording** → Create Report. Confirm sample count, last PPM, MAX, and job name / operator fields. 3. Enter a job name (e.g. Leak check) and operator. 4. **Save Report**. Confirm the Reports list shows that job name (no placeholder). 5. **Back** → Settings. Open **Reports** again — same row. |
 | **Pass** | Save lands on Reports with the named row. Settings → Reports shows the same row. Back from the list is Settings. If you were streaming, live PPM is still updating — BLE did not drop. |
-| **Source** | Create Report Step 1 (`feature/create_report_1`) |
+| **Source** | [3: Create report step 1](21efc521-cc08-47d7-a2a4-50dbdccf146e); main #4 |
 
 ### `reports-list-to-report-stub`
 
 | | |
 |---|---|
-| **Status** | `feature/create_report_1` |
+| **Status** | `current` |
 | **Setup** | Client Mode. A report already saved (`create-report-save-list`). Optional: streaming. |
 | **Steps** | Gear → Settings → Reports → tap the saved job name (or **Untitled report** if the job name was blank). Confirm the stub (**Report details are not implemented yet.**). Tap **Back**. |
 | **Pass** | Stub opens from the **saved** row. Back returns to **Reports** (not Settings). If you were streaming, BLE did not drop. |
@@ -335,14 +335,10 @@ NFC tap-to-pair, WiFi Direct / Multipeer, iOS two-phone demo, firmware OTA, Flag
 2. `client-scan-connect-stream`
 3. `main-ppm-live` → `main-ppm-record-toggle` → `main-ppm-record-log` → `main-ppm-ble-drop-session` → `main-ppm-stop-create-report`
 4. `reconnect-bt-off` **or** `reconnect-walk-away`, then `client-stale-scan-after-drop` (not recording)
+5. `settings-from-main-gear` → `settings-to-reports-list` (empty, no placeholder)
+6. `create-report-save-list` → `reports-list-to-report-stub`
 
 Exhausted while recording: `main-ppm-reconnect-fail-keep-trying` **or** `main-ppm-reconnect-fail-save-partial`; also `main-ppm-stop-while-dropped` and `main-ppm-stop-after-reconnect`.
-
-### Feature `create_report_1` (not on `main` yet)
-
-1. `settings-from-main-gear` → `settings-to-reports-list` (empty, no placeholder)
-2. `main-ppm-stop-create-report` (Back without Save still discards)
-3. `create-report-save-list` → `reports-list-to-report-stub`
 
 ---
 
