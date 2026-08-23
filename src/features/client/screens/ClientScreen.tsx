@@ -27,6 +27,7 @@ import {useRecordingSession} from '../hooks/useRecordingSession';
 interface Props {
   onBack: () => void;
   onCreateReport: (capture: SessionCapture) => void;
+  onOpenSettings?: () => void;
 }
 
 function stateLabel(state: ConnectionState): string {
@@ -68,7 +69,11 @@ function firmwareBadgeLabel(
   return `Firmware ${version} — ${status}`;
 }
 
-export default function ClientScreen({onBack, onCreateReport}: Props) {
+export default function ClientScreen({
+  onBack,
+  onCreateReport,
+  onOpenSettings,
+}: Props) {
   const isDark = useColorScheme() === 'dark';
   const {
     connectionState,
@@ -156,7 +161,8 @@ export default function ClientScreen({onBack, onCreateReport}: Props) {
             testID="settings-gear"
             accessibilityRole="button"
             accessibilityLabel="Settings"
-            style={styles.headerControl}>
+            style={styles.headerControl}
+            onPress={onOpenSettings}>
             <Text style={[styles.gear, isDark && styles.textLight]}>⚙</Text>
           </Pressable>
         </View>

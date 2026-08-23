@@ -67,6 +67,23 @@ describe('ClientScreen', () => {
     expect(screen.getByLabelText('Settings')).toBeOnTheScreen();
   });
 
+  it('opens Settings when the gear is pressed', async () => {
+    mockClient();
+    const onOpenSettings = jest.fn();
+
+    await render(
+      <ClientScreen
+        onBack={jest.fn()}
+        onCreateReport={jest.fn()}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.press(screen.getByTestId('settings-gear'));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
   it('should display the current reconnect attempt out of the total retry limit', async () => {
     mockClient({
       connectionState: 'reconnecting',

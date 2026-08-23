@@ -261,6 +261,20 @@ Live PPM on Client Mode.
 
 ---
 
+## Settings
+
+### `settings-from-main-gear`
+
+| | |
+|---|---|
+| **Status** | `feature/settings_screen` |
+| **Setup** | Client Mode. Optional: streaming. |
+| **Steps** | Tap the **⚙** gear. Confirm **Settings**. Tap **Back**. |
+| **Pass** | Gear opens Settings. Back returns to Client Mode (not Mode Select). If you were streaming, live PPM is still updating — BLE did not drop. |
+| **Source** | [Settings screen feature branch](fe8505e7-d9fc-41ab-895a-950d083b2b76) |
+
+---
+
 ## Planned (do not run as current)
 
 ### `create-report-save-list-pdf`
