@@ -42,7 +42,8 @@ src/
     mode-select/
       screens/
     report/
-      screens/                      # CreateReport, ReportsList, ReportStub
+      screens/                      # CreateReport, ReportsList, ReportDetails
+      components/                   # SessionPpmChart
       hooks/                        # useSavedReports
     shared/                         # BackLink (UI used by multiple features)
 
@@ -52,7 +53,7 @@ src/
     device/                         # UUID helpers, firmware compatibility
     signals/                        # RSSI → strength, PPM math
     session/                        # recording capture / gaps (pure)
-    report/                         # buildSavedReport, list label (pure)
+    report/                         # buildSavedReport, list label, lastPpm, plotPpmSamples (pure)
 
   services/
     ble/
@@ -91,9 +92,9 @@ __tests__/
 
 ## App routing
 
-Mode Select, Client, and Tool are modes. Settings, Reports, the report stub, and Create Report are **overlays**: Client stays mounted (hidden) so BLE does not drop.
+Mode Select, Client, and Tool are modes. Settings, Reports, report details, and Create Report are **overlays**: Client stays mounted (hidden) so BLE does not drop.
 
-- Settings stack Back is linear: report stub → Reports list → Settings → Client.
+- Settings stack Back is linear: report details → Reports list → Settings → Client.
 - Create Report is a separate entry from **Stop Recording**. **Save Report** navigates to Reports; **Back** without Save discards the capture.
 
 ## BLE-specific conventions
