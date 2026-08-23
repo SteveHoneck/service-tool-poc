@@ -76,10 +76,8 @@ Turning Bluetooth off on the Tool phone usually kills the peripheral. After BT c
 | **Status** | `current` |
 | **Setup** | Tool advertising |
 | **Steps** | Client: **Scan for Tools**. Tap **Connect** on `ServiceTool-001`. |
-| **Pass** | Scan lists `ServiceTool-*`. After connect: **Streaming**; live telemetry updates ~1 Hz; Tool shows **Connected centrals: 1** and last telemetry sent. Client firmware badge `Firmware 1.2.0 — Compatible`. |
+| **Pass** | Scan lists `ServiceTool-*`. After connect: **Streaming**; live **PPM** updates ~1 Hz (see `main-ppm-live`); Tool shows **Connected centrals: 1** and last telemetry sent. Client firmware badge `Firmware 1.2.0 — Compatible`. |
 | **Source** | `README.md` Usage; [App & Arch explanation](9c16588d-d6df-4bfc-b72a-066966b693e8) |
-
-On `main`, live values are **temperature °C** and **RPM**. On `feature/main_screen_ui`, this screen is Live PPM (see `main-ppm-live`).
 
 ### `client-disconnect`
 
@@ -135,6 +133,16 @@ Backoff is 6 attempts (`MAX_RECONNECT_ATTEMPTS`). UI must say `Attempt n of 6`, 
 | **Pass** | Attempts count up to 6 (`Attempt 6 of 6`), then failure. Error tells you to start advertising on the tool and use **Reconnect Last Device**. No `n of 4` and no `5 of 4`. |
 | **Source** | [Reconnect retry count UI](68a2782b-98ad-48af-851a-00905d5d0fee); `useBleClient` failure copy |
 
+### `client-stale-scan-after-drop`
+
+| | |
+|---|---|
+| **Status** | `current` |
+| **Setup** | Streaming, **not** recording. |
+| **Steps** | Turn Tool Bluetooth **off** and leave it off through all retries. |
+| **Pass** | Connection card, **Scan for Tools**, and **Reconnect Last Device**. No leftover **ServiceTool-001** / **Signal Strength: Strong** / **Connect** row (tool BLE is off). Same leftover row must not appear after **Keep trying** while recording. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) leftover scan results after drop |
+
 ---
 
 ## Signal and firmware
@@ -161,15 +169,15 @@ OTA / incompatible-version UI is backlog — not a `current` case.
 
 ---
 
-## Main PPM (`feature/main_screen_ui`)
+## Main PPM
 
-These replace temp/RPM on Client Mode. Run on that branch, not `main`.
+Live PPM on Client Mode. This is the stream to check; temperature °C / RPM are retired.
 
 ### `main-ppm-live`
 
 | | |
 |---|---|
-| **Status** | `feature/main_screen_ui` |
+| **Status** | `current` |
 | **Steps** | Tool advertise → Client connect. |
 | **Pass** | **Live PPM** updates ~1 Hz. **MAX** only rises during the connection (resets after a full telemetry drop). Level bar fills (full scale 500 ppm). Tool last-sent shows **N ppm**, not temp/RPM. Mock leak **pulses**: climb ~6–8 s from a low (~8–60) toward a high (~180–500), then snap to a new low. |
 | **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) A + mock pulse |
@@ -178,7 +186,7 @@ These replace temp/RPM on Client Mode. Run on that branch, not `main`.
 
 | | |
 |---|---|
-| **Status** | `feature/main_screen_ui` |
+| **Status** | `current` |
 | **Steps** | 1. Idle / scanning: **Record** is not on screen. 2. Connect until PPM is live → **Record** appears, enabled. 3. Tap **Record** → **Stop Recording**. 4. Tap **Stop Recording** → **Create Report** (does **not** toggle back to Record). 5. While the button still reads **Stop Recording** (do not tap it): **BLE off / walk-away / auto-reconnect** → stays **Stop Recording**. 6. Same, but tap **Disconnect** → button hides; later reconnect shows **Record**. |
 | **Pass** | Record only after connect/stream. Stop Recording always leaves Client Mode for Create Report. BLE-drop does not clear an in-progress recording. Explicit Disconnect is a hang-up. |
 | **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) B/D (device-checked) |
@@ -187,7 +195,7 @@ These replace temp/RPM on Client Mode. Run on that branch, not `main`.
 
 | | |
 |---|---|
-| **Status** | `feature/main_screen_ui` |
+| **Status** | `current` |
 | **Steps** | 1. Stream, tap **Record** — sample count shows **1 sample**, then climbs ~1 Hz while PPM keeps updating. 2. Optional: leave it on **Stop Recording**, turn Tool BLE off, then on — count freezes, button stays **Stop Recording**, then climbs on the **same** log. 3. Do **not** expect to tap **Record** again on this screen: **Stop Recording** goes to Create Report. New log = Back from Create Report, then **Record** (see `main-ppm-stop-create-report`). |
 | **Pass** | Samples use tool `ts`, not client receive time. No fake 0 ppm during the gap. Count is only on Client Mode while recording. |
 | **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) C/D (device-checked) |
@@ -196,23 +204,64 @@ These replace temp/RPM on Client Mode. Run on that branch, not `main`.
 
 | | |
 |---|---|
-| **Status** | `feature/main_screen_ui` |
+| **Status** | `current` |
 | **Steps** | 1. Record a few samples. 2. **Stop Recording** → **Create Report** stub with **N samples captured**. 3. **Back** — still connected, button **Record**, no leftover count. 4. Record/Stop again — new count, not the previous session. |
 | **Pass** | BLE stays up across the stub (Client mounted in background). Stop ends capture and navigates; it does not persist a report yet. |
 | **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) D |
 
----
-
-## Planned (do not run as current)
-
-### `main-ppm-ble-drop-session` (Phase 6 E)
+### `main-ppm-reconnect-fail-keep-trying`
 
 | | |
 |---|---|
-| **Status** | `planned` |
-| **When built** | After D. Distinct from C’s thin “no samples while disconnected”. |
-| **Pass (target)** | Mid-record BLE drop: banner `Connection lost — Reconnecting… (attempt n/4)` is **wrong** — must use real max (6). PPM frozen at last value. Logging paused; optional gap `{ type: 'disconnect', at }`. Reconnect → same session resumes, still **Stop Recording**. Exhausted → prompt save partial vs keep trying. **Stop** during reconnect → Create Report with samples until drop. Do **not** auto-navigate, auto-stop, append 0 ppm, or start a new session on reconnect. Disconnect **before** Record = existing reconnect UI only. |
-| **Source** | Plan “Disconnect while on Main screen”; [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) |
+| **Status** | `current` |
+| **Setup** | Streaming, **Record** already tapped (**Stop Recording** showing). |
+| **Steps** | 1. Turn Tool Bluetooth **off** and leave it off through all retries. 2. Alert **Could not reconnect** / **Save partial report or keep trying?** → **Keep trying**. 3. Tool: BT on → Tool Mode → **Start Advertising**. 4. Client: **Reconnect Last Device** (do not tap Connect on a scan row). |
+| **Pass** | After Keep trying: still on Client Mode, **Stop Recording** stays, sample count unchanged. After Reconnect Last Device: streaming resumes and the **same** recording continues (count climbs, still **Stop Recording**). |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) E |
+
+### `main-ppm-reconnect-fail-save-partial`
+
+| | |
+|---|---|
+| **Status** | `current` |
+| **Setup** | Streaming, **Record** already tapped (**Stop Recording** showing). |
+| **Steps** | 1. Turn Tool Bluetooth **off** and leave it off through all retries. 2. Alert **Could not reconnect** / **Save partial report or keep trying?** → **Save partial report**. |
+| **Pass** | Create Report opens with the captured sample count and **Connection lost during session**. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) E |
+
+### `main-ppm-ble-drop-session`
+
+| | |
+|---|---|
+| **Status** | `current` |
+| **Setup** | Streaming, **Record** already tapped (**Stop Recording** showing). |
+| **Steps** | 1. Turn Tool Bluetooth **off**. Watch Client while it shows **Reconnecting…**. 2. Do **not** tap Stop. Turn BT **on**, Tool Mode → **Start Advertising**, wait for auto-reconnect. |
+| **Pass** | Last **PPM** and **MAX** stay on screen (no **Waiting for notify stream…**). Sample count frozen until reconnect, then the **same** log continues; still **Stop Recording**. Attempt count is `n of 6` (never `of 4`). Does **not** auto-navigate to Create Report, auto-stop, append 0 ppm, or start a new session. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) E; plan “Disconnect while on Main screen” |
+
+### `main-ppm-stop-while-dropped`
+
+| | |
+|---|---|
+| **Status** | `current` |
+| **Setup** | Streaming, **Record** already tapped (**Stop Recording** showing). |
+| **Steps** | Turn Tool Bluetooth **off**. While Client is **Reconnecting…** (or after **Keep trying**, still dropped): tap **Stop Recording**. Do not use **Save partial report** on the alert. |
+| **Pass** | Create Report opens with samples captured until the drop and **Connection lost during session**. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) E |
+
+### `main-ppm-stop-after-reconnect`
+
+| | |
+|---|---|
+| **Status** | `current` |
+| **Setup** | Streaming, **Record** already tapped (**Stop Recording** showing). |
+| **Steps** | Turn Tool Bluetooth **off**, then on → Tool Mode → **Start Advertising**. Wait until live **PPM** is updating again. Tap **Stop Recording**. |
+| **Pass** | Create Report opens with the captured samples and **does not** show **Connection lost during session**. |
+| **Source** | [1: Main PPM](4951f28d-5e43-4f83-bcfc-d4658557e7e2) E |
+
+---
+
+## Planned (do not run as current)
 
 ### `create-report-save-list-pdf`
 
@@ -240,9 +289,10 @@ NFC tap-to-pair, WiFi Direct / Multipeer, iOS two-phone demo, firmware OTA, Flag
 
 1. `tool-advertise`
 2. `client-scan-connect-stream`
-3. `reconnect-bt-off` **or** `reconnect-walk-away`
+3. `main-ppm-live` → `main-ppm-record-toggle` → `main-ppm-record-log` → `main-ppm-ble-drop-session` → `main-ppm-stop-create-report`
+4. `reconnect-bt-off` **or** `reconnect-walk-away`, then `client-stale-scan-after-drop` (not recording)
 
-On `feature/main_screen_ui`, insert `main-ppm-live` → `main-ppm-record-toggle` → `main-ppm-record-log` → `main-ppm-stop-create-report` after connect, then reconnect.
+Exhausted while recording: `main-ppm-reconnect-fail-keep-trying` **or** `main-ppm-reconnect-fail-save-partial`; also `main-ppm-stop-while-dropped` and `main-ppm-stop-after-reconnect`.
 
 ---
 
