@@ -20,6 +20,7 @@ import {
 import {nextMaxPpm, ppmLevelFraction} from '../../../domain/signals/ppm';
 import {rssiToSignalStrength} from '../../../domain/signals/signalStrength';
 import {ConnectionState, SessionCapture} from '../../../types';
+import {BackLink} from '../../shared/BackLink';
 import {LivePpmLevelBar} from '../components/LivePpmLevelBar';
 import {useBleClient} from '../hooks/useBleClient';
 import {useRecordingSession} from '../hooks/useRecordingSession';
@@ -151,12 +152,7 @@ export default function ClientScreen({
         keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Pressable onPress={onBack} style={styles.headerControl}>
-            <View style={styles.backRow}>
-              <Text style={styles.backArrow}>←</Text>
-              <Text style={styles.backLink}>Back</Text>
-            </View>
-          </Pressable>
+          <BackLink onPress={onBack} />
           <Pressable
             testID="settings-gear"
             accessibilityRole="button"
@@ -378,27 +374,6 @@ const styles = StyleSheet.create({
   headerControl: {
     height: 40,
     justifyContent: 'center',
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backArrow: {
-    color: '#2563EB',
-    fontSize: 26,
-    lineHeight: 26,
-    fontWeight: '700',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-    transform: [{translateY: -5}],
-    marginRight: 4,
-  },
-  backLink: {
-    color: '#2563EB',
-    fontSize: 18,
-    lineHeight: 22,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   gear: {
     color: '#111827',

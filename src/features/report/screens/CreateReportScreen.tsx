@@ -1,12 +1,7 @@
 import React from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useColorScheme,
-} from 'react-native';
+import {StyleSheet, Text, View, useColorScheme} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {BackLink} from '../../shared/BackLink';
 import {PpmSample} from '../../../types';
 
 interface Props {
@@ -27,9 +22,7 @@ export default function CreateReportScreen({
       testID="create-report-screen"
       style={[styles.container, isDark && styles.containerDark]}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} testID="create-report-back">
-          <Text style={styles.backLink}>← Back</Text>
-        </Pressable>
+        <BackLink onPress={onBack} testID="create-report-back" />
         <Text style={[styles.title, isDark && styles.textLight]}>
           Create Report
         </Text>
@@ -69,15 +62,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 16,
   },
-  backLink: {
-    color: '#2563EB',
-    fontSize: 16,
-    marginBottom: 8,
-  },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: '#111827',
+    marginTop: 8,
   },
   card: {
     marginHorizontal: 20,
