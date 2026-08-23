@@ -19,4 +19,15 @@ describe('ReportsListScreen', () => {
     await user.press(screen.getByTestId('reports-list-back'));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
+
+  it('opens the report stub when the placeholder row is pressed', async () => {
+    const onOpenReport = jest.fn();
+    await render(
+      <ReportsListScreen onBack={jest.fn()} onOpenReport={onOpenReport} />,
+    );
+    const user = userEvent.setup();
+
+    await user.press(screen.getByTestId('reports-list-placeholder'));
+    expect(onOpenReport).toHaveBeenCalledTimes(1);
+  });
 });

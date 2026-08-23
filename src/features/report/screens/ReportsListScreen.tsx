@@ -1,13 +1,20 @@
 import React from 'react';
-import {StyleSheet, Text, View, useColorScheme} from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {BackLink} from '../../shared/BackLink';
 
 interface Props {
   onBack: () => void;
+  onOpenReport?: () => void;
 }
 
-export default function ReportsListScreen({onBack}: Props) {
+export default function ReportsListScreen({onBack, onOpenReport}: Props) {
   const isDark = useColorScheme() === 'dark';
 
   return (
@@ -19,11 +26,21 @@ export default function ReportsListScreen({onBack}: Props) {
         <Text style={[styles.title, isDark && styles.textLight]}>Reports</Text>
       </View>
 
-      <View style={[styles.card, isDark && styles.cardDark]}>
-        <Text style={[styles.body, isDark && styles.textMuted]}>
-          No saved reports yet
+      <Text style={[styles.empty, isDark && styles.textMuted]}>
+        No saved reports yet
+      </Text>
+
+      <Pressable
+        testID="reports-list-placeholder"
+        accessibilityRole="button"
+        accessibilityLabel="Untitled report"
+        onPress={onOpenReport}
+        style={[styles.row, isDark && styles.rowDark]}>
+        <Text style={[styles.rowLabel, isDark && styles.textLight]}>
+          Untitled report
         </Text>
-      </View>
+        <Text style={styles.rowChevron}>›</Text>
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -47,22 +64,37 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginTop: 8,
   },
-  card: {
+  empty: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    lineHeight: 22,
+  },
+  row: {
     marginHorizontal: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  cardDark: {
+  rowDark: {
     backgroundColor: '#1F2937',
     borderColor: '#374151',
   },
-  body: {
+  rowLabel: {
     fontSize: 16,
-    color: '#6B7280',
-    lineHeight: 22,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  rowChevron: {
+    color: '#2563EB',
+    fontSize: 22,
+    fontWeight: '600',
   },
   textLight: {
     color: '#F9FAFB',
