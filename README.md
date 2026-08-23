@@ -30,8 +30,9 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
    - Toggle Bluetooth back on, restart App in Tool mode, **Start Advertising** → auto-reconnects and resumes streaming
 
    ---OR - if you feel like going for a walk---
-    - Walk away from Tool device until Client shows **Signal Strength: Very Weak…** and disconnects, then walk back to Tool device → auto-reconnects and resumes streaming
-     
+    - Walk away from Tool device until Client shows **Signal Strength: Very weak** and disconnects, then walk back to Tool device → auto-reconnects and resumes streaming
+
+**Full two-phone checklist:** [`docs/MANUAL_TESTS.md`](docs/MANUAL_TESTS.md)
 
 ## Architecture
 
@@ -91,6 +92,7 @@ src/
 __tests__/                Mirrors domain/, services/, features/
 docs/
   ARCHITECTURE.md         Layer rules, dependencies, branch plan
+  MANUAL_TESTS.md         Two-phone manual test checklist
 .cursor/rules/            Cursor agent enforcement rules
 ```
 

@@ -1,0 +1,18 @@
+---
+description: Keep docs/MANUAL_TESTS.md current when recommending two-phone tests
+alwaysApply: true
+---
+
+# Manual tests
+
+Canonical file: `docs/MANUAL_TESTS.md`.
+
+When you recommend a **durable two-phone** (or device) scenario during feature work or a bugfix, update that file in the same change.
+
+1. Read `docs/MANUAL_TESTS.md` first.
+2. **New** scenario → new stable `id` (`kebab-case`) with Status, Steps, Pass, Source.
+3. **Changed** behavior → edit the existing id; do not duplicate.
+4. **Shipped on main** → set Status to `current`. Branch-only → `feature/<branch>`. Specified but unbuilt → `planned`.
+5. **Retired** → delete the id or mark planned/removed; do not leave contradicting steps.
+6. Skip Jest-only cases and one-off debug (rebuild, cache clear, UUID/MTU/encoding hunts).
+7. If Ask mode (cannot write): still name the id and the exact Pass line so `/sync-manual-tests` can add it later.

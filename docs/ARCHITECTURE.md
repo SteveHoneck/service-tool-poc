@@ -102,3 +102,4 @@ __tests__/
 
 - Cursor rules: `.cursor/rules/architecture.mdc`, `.cursor/rules/ble-services.mdc`
 - Demo script and GATT profile: `README.md`
+- Two-phone manual tests: `docs/MANUAL_TESTS.md`
