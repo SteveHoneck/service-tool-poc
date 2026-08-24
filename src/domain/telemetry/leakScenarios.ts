@@ -29,6 +29,7 @@ export interface ScenarioTickState {
   tick: number;
 }
 
+// Demo fixture library — not vendor documentation; replace with field-labeled sessions in production.
 export const LEAK_SCENARIOS: LeakScenario[] = [
   {
     id: 'cloudHunt',
