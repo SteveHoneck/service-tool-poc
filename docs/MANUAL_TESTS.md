@@ -315,15 +315,15 @@ Live PPM on Client Mode.
 
 ---
 
-## Leak scenarios and Analyze (`feature/ai_analysis`)
+## Leak scenarios and Analyze
 
-Not on `main` until this branch merges. Console API key is **not** Claude Pro — use [console.anthropic.com](https://console.anthropic.com). Do not commit `src/config/anthropic.local.ts`.
+Console API key is **not** Claude Pro — use [console.anthropic.com](https://console.anthropic.com). Do not commit `src/config/anthropic.local.ts`.
 
 ### `tool-leak-scenario-picker`
 
 | | |
 |---|---|
-| **Status** | `feature/ai_analysis` |
+| **Status** | `current` |
 | **Setup** | Tool Mode. Client streaming (`client-scan-connect-stream`). |
 | **Steps** | 1. On Tool, confirm **Leak scenario** rows: **Cloud hunt**, **Pinpoint** (default), **Two sites**, **Dirty room**. 2. **Start Advertising** if needed. 3. Tap each scenario in turn. Watch Tool last-sent PPM and Client live PPM. |
 | **Pass** | Each row selects. Live PPM **shape** changes with the scenario (slow climb vs one spike vs two spikes vs high noisy baseline). Changing scenario while advertising does not drop BLE. The scenario name is **not** shown on the Client. |
@@ -333,7 +333,7 @@ Not on `main` until this branch merges. Console API key is **not** Claude Pro �
 
 | | |
 |---|---|
-| **Status** | `feature/ai_analysis` |
+| **Status** | `current` |
 | **Setup** | Dev machine. Client APK/bundle used on the phone. One-time; not a two-phone ritual. |
 | **Steps** | 1. Copy `src/config/anthropic.local.example.ts` to `src/config/anthropic.local.ts`. 2. Paste a Console `sk-ant-…` key. 3. Reload Metro / rebuild the Client so the key is in the bundle. 4. Open any report with ≥20 samples → **Analyze Report**. |
 | **Pass** | Analyze no longer shows the missing-key copy pointing at `anthropic.local.ts`. Empty/missing file still shows that copy and does **not** call the network. |
@@ -343,7 +343,7 @@ Not on `main` until this branch merges. Console API key is **not** Claude Pro �
 
 | | |
 |---|---|
-| **Status** | `feature/ai_analysis` |
+| **Status** | `current` |
 | **Setup** | `config-anthropic-local-key`. Tool advertising. Client streaming. |
 | **Steps** | 1. Tool: select **Pinpoint**. 2. Client: **Record** about 50 seconds (**stop before 60s** so the 60s loop does not add a second peak). **Stop Recording** → save. 3. Report Details → **Analyze Report**. Confirm Prototype cards (Match with a percent confident, Why, Pattern, Next steps, Cannot conclude). |
 | **Pass** | Analyze is enabled. Result match is pinpoint-style (one peak then decay), not cloud-hunt plateau copy. **Analyze Report** greys out after the result. Opening a different report does not show this result. |
@@ -353,7 +353,7 @@ Not on `main` until this branch merges. Console API key is **not** Claude Pro �
 
 | | |
 |---|---|
-| **Status** | `feature/ai_analysis` |
+| **Status** | `current` |
 | **Setup** | Same as `report-analyze-pinpoint`. Cloud hunt **holds** at ~80 PPM after the climb (does not loop). |
 | **Steps** | 1. Tool: select **Cloud hunt**. 2. Client: record ~50s (or longer — the plateau holds). Save. 3. Analyze. |
 | **Pass** | Match / pattern differ from the pinpoint report (`matchId` is not the same story). Guidance still has no fitting type, lb/year, or cost claim. |
@@ -363,7 +363,7 @@ Not on `main` until this branch merges. Console API key is **not** Claude Pro �
 
 | | |
 |---|---|
-| **Status** | `feature/ai_analysis` |
+| **Status** | `current` |
 | **Setup** | Client streaming. A new session. |
 | **Steps** | **Record** fewer than 20 samples (a few seconds). Save. Open Report Details. |
 | **Pass** | **Analyze Report** is disabled. Helper copy says at least 20 samples. No diagnosis cards. |
@@ -395,15 +395,9 @@ NFC tap-to-pair, WiFi Direct / Multipeer, iOS two-phone demo, firmware OTA, sess
 4. `reconnect-bt-off` **or** `reconnect-walk-away`, then `client-stale-scan-after-drop` (not recording)
 5. `settings-from-main-gear` → `settings-to-reports-list` (empty, no placeholder)
 6. `create-report-save-list` → `reports-list-to-report-details` → `create-report-save-list-pdf`
+7. `tool-leak-scenario-picker` → `config-anthropic-local-key` (once per Client build) → `report-analyze-too-short` → `report-analyze-pinpoint` then `report-analyze-cloud-hunt` (different match)
 
 Exhausted while recording: `main-ppm-reconnect-fail-keep-trying` **or** `main-ppm-reconnect-fail-save-partial`; also `main-ppm-stop-while-dropped` and `main-ppm-stop-after-reconnect`.
-
-### Feature branch `feature/ai_analysis`
-
-1. `tool-leak-scenario-picker`
-2. `config-anthropic-local-key` (once per Client build)
-3. `report-analyze-too-short`
-4. `report-analyze-pinpoint` then `report-analyze-cloud-hunt` (different match)
 
 ---
 
