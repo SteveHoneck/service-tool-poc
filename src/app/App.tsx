@@ -5,6 +5,7 @@ import ClientScreen from '../features/client/screens/ClientScreen';
 import SettingsScreen from '../features/client/screens/SettingsScreen';
 import ModeSelectScreen from '../features/mode-select/screens/ModeSelectScreen';
 import { useSavedReports } from '../features/report/hooks/useSavedReports';
+import { useShareReportPdf } from '../features/report/hooks/useShareReportPdf';
 import CreateReportScreen from '../features/report/screens/CreateReportScreen';
 import ReportDetailsScreen from '../features/report/screens/ReportDetailsScreen';
 import ReportsListScreen from '../features/report/screens/ReportsListScreen';
@@ -29,6 +30,7 @@ function App() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const { state: savedReports, actions: savedReportActions } =
     useSavedReports();
+  const { state: sharePdf, actions: sharePdfActions } = useShareReportPdf();
   const selectedReport = savedReports.reports.find(
     report => report.id === selectedReportId,
   );
@@ -93,6 +95,11 @@ function App() {
         <ReportDetailsScreen
           report={selectedReport}
           onBack={() => setScreen('reports')}
+          onSharePdf={() => {
+            void sharePdfActions.share(selectedReport);
+          }}
+          sharing={sharePdf.sharing}
+          shareError={sharePdf.error}
         />
       )}
       {screen === 'create-report' && reportCapture && (
