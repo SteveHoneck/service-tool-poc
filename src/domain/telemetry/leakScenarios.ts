@@ -129,14 +129,15 @@ function trianglePeak(
 }
 
 export function ppmAtTick(scenarioId: LeakScenarioId, tick: number): number {
-  const t = wrapTick(tick);
-
   if (scenarioId === 'cloudHunt') {
+    const t = Math.max(0, tick);
     if (t < 40) {
       return Math.round(20 + (60 * t) / 40);
     }
     return 80;
   }
+
+  const t = wrapTick(tick);
 
   if (scenarioId === 'pinpoint') {
     if (t < 15) {

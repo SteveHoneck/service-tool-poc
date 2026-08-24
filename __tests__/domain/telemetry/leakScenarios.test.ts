@@ -66,13 +66,20 @@ describe('domain/telemetry/leakScenarios', () => {
   });
 
   describe('ppmAtTick', () => {
-    it('repeats every 60 seconds', () => {
-      for (const id of LEAK_SCENARIO_IDS) {
+    it('repeats every 60 seconds except cloud hunt', () => {
+      for (const id of LEAK_SCENARIO_IDS.filter(id => id !== 'cloudHunt')) {
         expect(ppmAtTick(id, SCENARIO_PERIOD_SECONDS)).toBe(ppmAtTick(id, 0));
         expect(ppmAtTick(id, SCENARIO_PERIOD_SECONDS + 7)).toBe(
           ppmAtTick(id, 7),
         );
       }
+    });
+
+    it('holds cloud hunt at the plateau instead of looping', () => {
+      expect(ppmAtTick('cloudHunt', 0)).toBeLessThan(30);
+      expect(ppmAtTick('cloudHunt', 40)).toBe(80);
+      expect(ppmAtTick('cloudHunt', SCENARIO_PERIOD_SECONDS)).toBe(80);
+      expect(ppmAtTick('cloudHunt', SCENARIO_PERIOD_SECONDS + 20)).toBe(80);
     });
 
     it('keeps cloud hunt as a slow climb then a plateau', () => {
