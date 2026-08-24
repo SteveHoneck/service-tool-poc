@@ -303,17 +303,19 @@ Live PPM on Client Mode.
 | **Pass** | Details open from the **saved** row with those labeled fields (and the connection-lost note when relevant) plus X/Y axes and axis labels on the graph. Back returns to **Reports** (not Settings). If you were streaming, BLE did not drop. |
 | **Source** | Report details screen; main #5 |
 
----
-
-## Planned (do not run as current)
-
 ### `create-report-save-list-pdf`
 
 | | |
 |---|---|
-| **Status** | `planned` |
-| **Pass (target)** | From a **saved** report in the Reports list: generate a basic PDF → share sheet (not mailto attachment). Not on Settings. Not required on Create Report step 1. |
-| **Source** | Plan Phase 6 PDF |
+| **Status** | `feature/pdf_report` |
+| **Setup** | Client Mode. A report already saved (`create-report-save-list`). Optional: streaming. Native rebuild after adding `react-native-html-to-pdf` and `react-native-share`. |
+| **Steps** | 1. Gear → Settings → Reports → tap the saved row → **Report Details**. 2. Scroll to **Share PDF** and tap it. 3. Confirm the OS share sheet (not a mailto compose). **Print** is a valid target. 4. Open or print the PDF: job name (or **Untitled report**), operator, notes, last/MAX PPM, Started/Ended as local times, sample count, and a session graph with **PPM** left of the Y-axis and **Time (s)** below the X-axis. 5. Dismiss the sheet. **Back** to Reports. |
+| **Pass** | Share PDF is only on Report Details (not Settings, not Create Report). Sheet opens with a PDF. Cancel/dismiss does not crash. Back returns to **Reports**. If you were streaming, BLE did not drop. Gmail failing to attach a cache file is out of scope. |
+| **Source** | Plan Phase 6 PDF; [PDF report branch](b353c0b8-0f94-4c37-b818-16f865654360) |
+
+---
+
+## Planned (do not run as current)
 
 ### `client-disconnect-while-recording`
 
@@ -336,7 +338,7 @@ NFC tap-to-pair, WiFi Direct / Multipeer, iOS two-phone demo, firmware OTA, Flag
 3. `main-ppm-live` → `main-ppm-record-toggle` → `main-ppm-record-log` → `main-ppm-ble-drop-session` → `main-ppm-stop-create-report`
 4. `reconnect-bt-off` **or** `reconnect-walk-away`, then `client-stale-scan-after-drop` (not recording)
 5. `settings-from-main-gear` → `settings-to-reports-list` (empty, no placeholder)
-6. `create-report-save-list` → `reports-list-to-report-details`
+6. `create-report-save-list` → `reports-list-to-report-details` → `create-report-save-list-pdf` (`feature/pdf_report` until merge)
 
 Exhausted while recording: `main-ppm-reconnect-fail-keep-trying` **or** `main-ppm-reconnect-fail-save-partial`; also `main-ppm-stop-while-dropped` and `main-ppm-stop-after-reconnect`.
 
