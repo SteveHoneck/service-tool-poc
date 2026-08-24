@@ -1,5 +1,6 @@
 import { lastPpm, reportListLabel } from './buildSavedReport';
 import { SavedReport } from '../../types';
+import { buildReportPdfChartSvg } from './reportPdfChartSvg';
 
 function escapeHtml(value: string): string {
   return value
@@ -60,6 +61,7 @@ export function buildReportPdfHtml(report: SavedReport): string {
     <p>Started: ${formatReportPdfDate(report.startedAt)}</p>
     <p>Ended: ${formatReportPdfDate(report.endedAt)}</p>
     <p>${sampleCountLabel(report.ppmSamples.length)}</p>
+    ${buildReportPdfChartSvg(report.ppmSamples)}
   </body>
 </html>`;
 }

@@ -2,6 +2,8 @@ import {
   buildReportPdfHtml,
   formatReportPdfDate,
 } from '../../../src/domain/report/buildReportPdfHtml';
+import { plotPpmSamples } from '../../../src/domain/report/plotPpmSamples';
+import { PDF_CHART_BOX } from '../../../src/domain/report/reportPdfChartSvg';
 import { SavedReport } from '../../../src/types';
 
 const namedReport: SavedReport = {
@@ -48,6 +50,14 @@ describe('buildReportPdfHtml', () => {
     expect(html).not.toContain(new Date(1_000).toISOString());
     expect(html).not.toContain(new Date(3_000).toISOString());
     expect(html).toContain('3 samples');
+    expect(html).toContain('<svg');
+    expect(html).toContain('PPM');
+    expect(html).toContain('Time (s)');
+    expect(html).toContain(
+      `points="${
+        plotPpmSamples(namedReport.ppmSamples, PDF_CHART_BOX).polyline
+      }"`,
+    );
   });
 
   it('uses Untitled report when the job name is blank', () => {
@@ -72,6 +82,8 @@ describe('buildReportPdfHtml', () => {
 
     expect(html).toContain('0 ppm');
     expect(html).toContain('0 samples');
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('<polyline');
   });
 
   it('uses the singular sample label when there is one sample', () => {
