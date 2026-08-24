@@ -11,6 +11,7 @@ Proof-of-concept React Native app demonstrating BLE connection management betwee
 - Record a PPM session, enter Create Report (job, operator, last/MAX PPM), and **Save Report** to a local list
 - Settings stack (gear → Settings → Reports) without dropping the BLE connection
 - Share a saved report as a basic PDF from Report Details (OS share sheet, not mailto)
+- Tool Mode leak-scenario picker; **Analyze Report** few-shot match against that library (Anthropic Haiku, gitignored local key)
 
 ## Quick start
 
@@ -23,14 +24,15 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
 
 ## Usage (two phones)
 
-1. **Phone 1 (Tool Mode)** — Open app → **Tool Mode** → **Start Advertising**
+1. **Phone 1 (Tool Mode)** — Open app → **Tool Mode** → pick a **Leak scenario** (default **Pinpoint**) → **Start Advertising**
    - Device advertises as `ServiceTool-001`
+   - Live PPM shape follows the scenario; the name is not sent over BLE
 2. **Phone 2 (Client Mode)** — Open app → **Client Mode** → **Scan for Tools** → tap **Connect**
    - Live PPM updates every second
    - Firmware badge shows `1.2.0 — Compatible`
-   - **Record** → **Stop Recording** opens **Create Report** (sample count, last PPM, MAX, job name, operator)
+   - **Record** ~50 seconds (**stop before 60s** except Cloud hunt, which holds its plateau) → **Stop Recording** opens **Create Report** (sample count, last PPM, MAX, job name, operator)
    - **Save Report** writes the session and opens the **Reports** list; **Back** without Save discards
-   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for **Report Details** (job name, operator, notes, last/max reading, session graph). **Share PDF** opens the OS share sheet; **Print** is a valid check
+   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for **Report Details**. **Analyze Report** (needs ≥20 samples and `src/config/anthropic.local.ts`) shows Prototype guidance cards. **Share PDF** opens the OS share sheet; **Print** is a valid check
    - Back walks details → Reports → Settings → Client (BLE stays up)
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count
@@ -86,19 +88,21 @@ src/
     client/               Client Mode, Settings, recording orchestration
     tool/                 Tool Mode screens, hooks
     mode-select/          Mode picker screen
-    report/               Create Report, Reports list, report details, session chart, Share PDF
+    report/               Create Report, Reports list, report details, session chart, Share PDF, Analyze
     shared/               Shared UI (BackLink)
   domain/
-    telemetry/            Parse/serialize, wire format
+    telemetry/            Parse/serialize, wire format, leak-scenario waveforms
     connection/           Reconnect backoff policy
     device/               UUID helpers, firmware compatibility
     signals/              RSSI → strength, PPM math
     session/              Recording capture / gaps
-    report/               Build saved report, list label, last PPM, plot points, PDF HTML/SVG
+    report/               Build saved report, list label, last PPM, plot points, PDF HTML/SVG, analysis request
   services/
     ble/                  Central/peripheral adapters, scan, constants
     storage/              Last device id, saved-report list
     report/               HTML-to-PDF generate + share sheet
+    ai/                   Anthropic Messages fetch
+  config/                 Anthropic key loader; `anthropic.local.ts` is gitignored
   types/                  Shared TypeScript interfaces
 
 __tests__/                Mirrors domain/, services/, features/, app/
