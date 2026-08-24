@@ -87,6 +87,13 @@ function asString(value: unknown, field: string): string {
   return value;
 }
 
+function asConfidence(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+  return asString(value, 'confidence');
+}
+
 function asStringArray(value: unknown, field: string): string[] {
   if (
     !Array.isArray(value) ||
@@ -117,7 +124,7 @@ export function parseAnalysisResponse(text: string): AnalysisResult {
 
   return {
     matchId: matchId as AnalysisMatchId,
-    confidence: asString(body.confidence, 'confidence'),
+    confidence: asConfidence(body.confidence),
     why: asString(body.why, 'why'),
     pattern: asString(body.pattern, 'pattern'),
     nextSteps: asStringArray(body.nextSteps, 'nextSteps'),

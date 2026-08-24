@@ -130,4 +130,17 @@ describe('parseAnalysisResponse', () => {
   it('rejects malformed JSON', () => {
     expect(() => parseAnalysisResponse('not json')).toThrow(/JSON/);
   });
+
+  it('accepts numeric confidence from the model', () => {
+    const fenced = [
+      '```json',
+      JSON.stringify({ ...valid, confidence: 0.72 }),
+      '```',
+    ].join('\n');
+
+    expect(parseAnalysisResponse(fenced)).toEqual({
+      ...valid,
+      confidence: '0.72',
+    });
+  });
 });
