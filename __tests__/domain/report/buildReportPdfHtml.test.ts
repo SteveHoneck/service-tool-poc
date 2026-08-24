@@ -1,4 +1,7 @@
-import { buildReportPdfHtml } from '../../../src/domain/report/buildReportPdfHtml';
+import {
+  buildReportPdfHtml,
+  formatReportPdfDate,
+} from '../../../src/domain/report/buildReportPdfHtml';
 import { SavedReport } from '../../../src/types';
 
 const namedReport: SavedReport = {
@@ -17,6 +20,20 @@ const namedReport: SavedReport = {
   gaps: [],
 };
 
+describe('formatReportPdfDate', () => {
+  it('formats a local timestamp as a readable date and time', () => {
+    const timestamp = new Date(2026, 7, 23, 15, 4, 0).getTime();
+
+    expect(formatReportPdfDate(timestamp)).toBe('Aug 23, 2026, 3:04 PM');
+  });
+
+  it('uses 12-hour time at midnight', () => {
+    const timestamp = new Date(2026, 0, 1, 0, 0, 0).getTime();
+
+    expect(formatReportPdfDate(timestamp)).toBe('Jan 1, 2026, 12:00 AM');
+  });
+});
+
 describe('buildReportPdfHtml', () => {
   it('includes job, operator, notes, readings, times, and sample count', () => {
     const html = buildReportPdfHtml(namedReport);
@@ -26,8 +43,10 @@ describe('buildReportPdfHtml', () => {
     expect(html).toContain('Notes: -');
     expect(html).toContain('Last reading: 180 ppm');
     expect(html).toContain('Max. reading: 250 ppm');
-    expect(html).toContain(new Date(1_000).toISOString());
-    expect(html).toContain(new Date(3_000).toISOString());
+    expect(html).toContain(`Started: ${formatReportPdfDate(1_000)}`);
+    expect(html).toContain(`Ended: ${formatReportPdfDate(3_000)}`);
+    expect(html).not.toContain(new Date(1_000).toISOString());
+    expect(html).not.toContain(new Date(3_000).toISOString());
     expect(html).toContain('3 samples');
   });
 
