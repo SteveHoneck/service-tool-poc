@@ -23,10 +23,10 @@ export default function ModeSelectScreen({
     <SafeAreaView
       style={[styles.container, isDark && styles.containerDark]}>
       <Text style={[styles.title, isDark && styles.textLight]}>
-        Service Tool PoC
+        Leak Detection PoC
       </Text>
       <Text style={[styles.subtitle, isDark && styles.textMuted]}>
-        Choose how this phone participates in the BLE demo.
+        Choose how this phone participates in the leak-detection BLE demo.
       </Text>
 
       <View style={styles.cardGroup}>
@@ -37,7 +37,7 @@ export default function ModeSelectScreen({
             Client Mode
           </Text>
           <Text style={[styles.cardBody, isDark && styles.textMuted]}>
-            Scan for service tools, connect, and receive live telemetry.
+            Scan for leak detectors, connect, and receive live PPM telemetry.
           </Text>
         </Pressable>
 
@@ -48,7 +48,7 @@ export default function ModeSelectScreen({
             Tool Mode
           </Text>
           <Text style={[styles.cardBody, isDark && styles.textMuted]}>
-            Advertise as a mock service tool (GATT peripheral).
+            Advertise as a mock leak detector (GATT peripheral).
           </Text>
         </Pressable>
       </View>

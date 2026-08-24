@@ -1,6 +1,6 @@
-# Service Tool PoC
+# Leak Detection PoC
 
-Proof-of-concept React Native app demonstrating BLE connection management between a **client phone** and a **mock service tool** (second phone running Tool Mode).
+Proof-of-concept React Native app for **leak detection** over BLE: a **client phone** connects to a **mock leak detector** (second phone running Tool Mode) and streams PPM telemetry.
 
 ## What this proves
 
@@ -68,7 +68,7 @@ Single app, two modes — implemented with **feature modules + layered MVVM** (n
 ## GATT profile
 
 ```
-Service FFF0 (vendor tool service)
+Service FFF0 (custom leak-detector service)
   ├─ FFF1  NOTIFY  telemetry JSON { p, s, ts }  (p = ppm, s = status, ts = sample time)
   ├─ FFF2  WRITE   command (start/stop stream)
   └─ FFF3  READ    device status

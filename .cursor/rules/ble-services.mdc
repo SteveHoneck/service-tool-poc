@@ -16,7 +16,7 @@ Applies when editing `src/`. Full context: `docs/ARCHITECTURE.md`.
 
 ## GATT contract (`services/ble/constants.ts`)
 
-- Vendor service: `FFF0`; telemetry notify: `FFF1`; command write: `FFF2`.
+- Custom leak-detector service: `FFF0`; telemetry notify: `FFF1`; command write: `FFF2`.
 - Standard DIS: `180A` / firmware `2A26`.
 - Use **full 128-bit UUIDs** in native peripheral APIs (`toFullUuid()`).
 - Wire telemetry as compact JSON `{p,s,ts}` (`p` = ppm, `s` = status, `ts` = sample time); encode/decode in `domain/telemetry/`.

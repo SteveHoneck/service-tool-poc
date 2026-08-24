@@ -383,7 +383,7 @@ Not on `main` until this branch merges. Console API key is **not** Claude Pro â€
 
 ### Backlog transports (not Phase 6)
 
-NFC tap-to-pair, WiFi Direct / Multipeer, iOS two-phone demo, firmware OTA, Flag Event, full 14-page INFICON PDF. Keep out of this list until scoped.
+NFC tap-to-pair, WiFi Direct / Multipeer, iOS two-phone demo, firmware OTA, session event flags, full leak-detection report PDF. Keep out of this list until scoped.
 
 ---
 

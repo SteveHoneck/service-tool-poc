@@ -37,7 +37,7 @@ export const LEAK_SCENARIOS: LeakScenario[] = [
       'Slow climb from a low baseline, then a long plateau with no sharp spike.',
     guidance: {
       pattern:
-        'PPM rose gradually and leveled off — consistent with walking into a refrigerant cloud, not passing a single fitting.',
+        'PPM rose gradually and leveled off — consistent with walking into a gas cloud, not passing a single fitting.',
       nextSteps: [
         'Keep moving toward higher PPM instead of stopping at this plateau.',
         'Once the number climbs again, slow the sweep and switch to a pinpoint pass.',
@@ -45,7 +45,7 @@ export const LEAK_SCENARIOS: LeakScenario[] = [
       cannotConclude: [
         'Leak component or fitting type',
         'True leak rate (lb/year)',
-        'Refrigerant cost',
+        'Leak cost',
       ],
     },
   },
@@ -64,7 +64,7 @@ export const LEAK_SCENARIOS: LeakScenario[] = [
       cannotConclude: [
         'Which fitting leaked',
         'True leak rate (lb/year)',
-        'Refrigerant cost',
+        'Leak cost',
       ],
     },
   },

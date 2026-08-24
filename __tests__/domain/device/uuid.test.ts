@@ -8,7 +8,7 @@ import {toFullUuid, uuidMatches} from '../../../src/domain/device/uuid';
 
 describe('domain/device/uuid', () => {
   describe('toFullUuid', () => {
-    it('expands 16-bit vendor service UUID FFF0', () => {
+    it('expands 16-bit custom service UUID FFF0', () => {
       expect(toFullUuid('FFF0')).toBe(
         '0000FFF0-0000-1000-8000-00805F9B34FB',
       );

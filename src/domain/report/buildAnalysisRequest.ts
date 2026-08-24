@@ -27,7 +27,7 @@ export interface AnalysisRequest {
 const MATCH_IDS = new Set<string>([...LEAK_SCENARIO_IDS, 'none']);
 
 export const ANALYSIS_SYSTEM_PROMPT = [
-  'You classify a handheld refrigerant-sniffer PPM session against a small labeled library.',
+  'You classify a handheld leak-detector PPM session against a small labeled library.',
   'Pick exactly one library id or none.',
   'Cite this session’s numbers (duration, max, last, gaps) in why.',
   'Copy that item’s guidance into pattern, nextSteps, and cannotConclude; adapt wording only to cite the numbers.',

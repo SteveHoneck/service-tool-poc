@@ -1,6 +1,6 @@
-# ServiceToolPoC Architecture
+# Leak Detection PoC Architecture
 
-This document defines the architecture for the React Native service-tool BLE app.
+This document defines the architecture for the React Native leak-detection BLE app.
 
 ## Style: feature modules + layered MVVM
 
