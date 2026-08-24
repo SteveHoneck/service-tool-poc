@@ -1,6 +1,6 @@
 import {toFullUuid} from '../../domain/device/uuid';
 
-/** Custom vendor service tool GATT profile (16-bit UUIDs). */
+/** Custom leak-detector GATT profile (16-bit UUIDs). */
 export const TOOL_SERVICE_UUID = 'FFF0';
 export const TELEMETRY_CHAR_UUID = 'FFF1';
 export const COMMAND_CHAR_UUID = 'FFF2';

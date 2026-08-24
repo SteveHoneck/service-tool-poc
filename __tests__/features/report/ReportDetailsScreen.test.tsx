@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { AnalysisResult } from '../../../src/domain/report/buildAnalysisRequest';
 import ReportDetailsScreen from '../../../src/features/report/screens/ReportDetailsScreen';
 import { SavedReport } from '../../../src/types';
 
@@ -170,5 +171,153 @@ describe('ReportDetailsScreen', () => {
     expect(screen.getByTestId('report-details-share-error')).toHaveTextContent(
       'Could not create PDF',
     );
+  });
+
+  const longReport: SavedReport = {
+    ...namedReport,
+    ppmSamples: Array.from({ length: 20 }, (_, index) => ({
+      ppm: 20 + index,
+      timestamp: index * 1000,
+    })),
+    endedAt: 19_000,
+    maxPpm: 39,
+  };
+
+  const analysis: AnalysisResult = {
+    matchId: 'pinpoint',
+    confidence: '0.72',
+    why: 'One peak at 18s.',
+    pattern: 'Pinpoint-style peak then decay.',
+    nextSteps: ['Re-sweep the peak', 'Soap-test the joint'],
+    cannotConclude: ['True leak rate (lb/year)'],
+  };
+
+  it('disables Analyze Report when the session is too short', async () => {
+    const onAnalyze = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={namedReport}
+        onBack={jest.fn()}
+        onAnalyze={onAnalyze}
+      />,
+    );
+    const user = userEvent.setup();
+    const button = screen.getByTestId('report-details-analyze');
+
+    expect(button).toBeDisabled();
+    expect(screen.getByTestId('report-details-analyze-hint')).toHaveTextContent(
+      /20 samples/i,
+    );
+    await user.press(button);
+    expect(onAnalyze).not.toHaveBeenCalled();
+  });
+
+  it('calls onAnalyze when Analyze Report is pressed', async () => {
+    const onAnalyze = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        onAnalyze={onAnalyze}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.press(screen.getByTestId('report-details-analyze'));
+    expect(onAnalyze).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables Analyze Report while analyzing', async () => {
+    const onAnalyze = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        onAnalyze={onAnalyze}
+        analyzing
+      />,
+    );
+    const user = userEvent.setup();
+    const button = screen.getByTestId('report-details-analyze');
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent('Analyzing…');
+    await user.press(button);
+    expect(onAnalyze).not.toHaveBeenCalled();
+  });
+
+  it('disables Analyze Report after a result is shown', async () => {
+    const onAnalyze = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        onAnalyze={onAnalyze}
+        analysis={analysis}
+      />,
+    );
+    const user = userEvent.setup();
+    const button = screen.getByTestId('report-details-analyze');
+
+    expect(button).toBeDisabled();
+    await user.press(button);
+    expect(onAnalyze).not.toHaveBeenCalled();
+  });
+
+  it('spaces the analysis card below Analyze Report', async () => {
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        analysis={analysis}
+      />,
+    );
+
+    expect(screen.getByTestId('report-details-analysis')).toHaveStyle({
+      marginTop: 12,
+    });
+  });
+
+  it('shows prototype analysis cards when a result is set', async () => {
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        analysis={analysis}
+      />,
+    );
+
+    expect(
+      screen.getByTestId('report-details-analysis-prototype'),
+    ).toHaveTextContent('Prototype');
+    expect(
+      screen.getByTestId('report-details-analysis-match'),
+    ).toHaveTextContent('Pinpoint (72% confident)');
+    expect(screen.getByTestId('report-details-analysis-why')).toHaveTextContent(
+      'One peak at 18s.',
+    );
+    expect(
+      screen.getByTestId('report-details-analysis-pattern'),
+    ).toHaveTextContent('Pinpoint-style peak then decay.');
+    expect(
+      screen.getByTestId('report-details-analysis-next-steps'),
+    ).toHaveTextContent(/1\. Re-sweep the peak/);
+    expect(
+      screen.getByTestId('report-details-analysis-cannot'),
+    ).toHaveTextContent(/True leak rate \(lb\/year\)/);
+  });
+
+  it('shows an analysis error when analysisError is set', async () => {
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        analysisError="Add your key to src/config/anthropic.local.ts (see the example file) and reload."
+      />,
+    );
+
+    expect(
+      screen.getByTestId('report-details-analysis-error'),
+    ).toHaveTextContent(/src\/config\/anthropic\.local\.ts/);
   });
 });

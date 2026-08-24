@@ -63,6 +63,9 @@ yarn-error.log
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
 
+# Anthropic API key (copy from src/config/anthropic.local.example.ts)
+src/config/anthropic.local.ts
+
 # testing
 /coverage
 

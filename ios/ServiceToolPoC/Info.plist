@@ -35,9 +35,9 @@
 		<true/>
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>This app uses Bluetooth to connect to service tools and stream telemetry.</string>
+	<string>This app uses Bluetooth to connect to leak detectors and stream telemetry.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>This app uses Bluetooth to advertise as a mock service tool.</string>
+	<string>This app uses Bluetooth to advertise as a mock leak detector.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location access is required for Bluetooth scanning on older iOS versions.</string>
 	<key>UILaunchStoryboardName</key>

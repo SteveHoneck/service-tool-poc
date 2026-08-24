@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ClientScreen from '../features/client/screens/ClientScreen';
 import SettingsScreen from '../features/client/screens/SettingsScreen';
 import ModeSelectScreen from '../features/mode-select/screens/ModeSelectScreen';
+import { useReportAnalysis } from '../features/report/hooks/useReportAnalysis';
 import { useSavedReports } from '../features/report/hooks/useSavedReports';
 import { useShareReportPdf } from '../features/report/hooks/useShareReportPdf';
 import CreateReportScreen from '../features/report/screens/CreateReportScreen';
@@ -31,6 +32,8 @@ function App() {
   const { state: savedReports, actions: savedReportActions } =
     useSavedReports();
   const { state: sharePdf, actions: sharePdfActions } = useShareReportPdf();
+  const { state: reportAnalysis, actions: reportAnalysisActions } =
+    useReportAnalysis();
   const selectedReport = savedReports.reports.find(
     report => report.id === selectedReportId,
   );
@@ -86,6 +89,7 @@ function App() {
             if (!exists) {
               return;
             }
+            reportAnalysisActions.clear();
             setSelectedReportId(reportId);
             setScreen('report-details');
           }}
@@ -94,12 +98,21 @@ function App() {
       {screen === 'report-details' && selectedReport && (
         <ReportDetailsScreen
           report={selectedReport}
-          onBack={() => setScreen('reports')}
+          onBack={() => {
+            reportAnalysisActions.clear();
+            setScreen('reports');
+          }}
           onSharePdf={() => {
             void sharePdfActions.share(selectedReport);
           }}
           sharing={sharePdf.sharing}
           shareError={sharePdf.error}
+          onAnalyze={() => {
+            void reportAnalysisActions.analyze(selectedReport);
+          }}
+          analyzing={reportAnalysis.analyzing}
+          analysis={reportAnalysis.result}
+          analysisError={reportAnalysis.error}
         />
       )}
       {screen === 'create-report' && reportCapture && (

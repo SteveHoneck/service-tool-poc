@@ -7,7 +7,7 @@ test('renders the mode selection screen', async () => {
     <ModeSelectScreen onSelectClient={jest.fn()} onSelectTool={jest.fn()} />,
   );
 
-  expect(screen.getByText('Service Tool PoC')).toBeOnTheScreen();
+  expect(screen.getByText('Leak Detection PoC')).toBeOnTheScreen();
   expect(screen.getByText('Client Mode')).toBeOnTheScreen();
   expect(screen.getByText('Tool Mode')).toBeOnTheScreen();
 });

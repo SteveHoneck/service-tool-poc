@@ -1,6 +1,6 @@
-# ServiceToolPoC Architecture
+# Leak Detection PoC Architecture
 
-This document defines the architecture for the React Native service-tool BLE app.
+This document defines the architecture for the React Native leak-detection BLE app.
 
 ## Style: feature modules + layered MVVM
 
@@ -44,16 +44,16 @@ src/
     report/
       screens/                      # CreateReport, ReportsList, ReportDetails
       components/                   # SessionPpmChart
-      hooks/                        # useSavedReports, useShareReportPdf
+      hooks/                        # useSavedReports, useShareReportPdf, useReportAnalysis
     shared/                         # BackLink (UI used by multiple features)
 
   domain/
-    telemetry/                      # serialize, parse, TelemetryPayload rules
+    telemetry/                      # serialize, parse, leak-scenario waveforms (pure)
     connection/                     # reconnect backoff policy (pure)
     device/                         # UUID helpers, firmware compatibility
     signals/                        # RSSI → strength, PPM math
     session/                        # recording capture / gaps (pure)
-    report/                         # buildSavedReport, PDF HTML/SVG, plotPpmSamples (pure)
+    report/                         # buildSavedReport, PDF HTML/SVG, plotPpmSamples, analysis request (pure)
 
   services/
     ble/
@@ -67,6 +67,13 @@ src/
       reportStorage.ts              # AsyncStorage saved-report list
     report/
       reportPdf.ts                  # html-to-pdf generate + share sheet (cache file)
+    ai/
+      anthropicAnalysis.ts          # Anthropic Messages fetch (no SDK)
+
+  config/
+    anthropic.ts                    # getAnthropicApiKey(); try/catch require of local file
+    anthropic.local.example.ts      # committed empty-key template
+    anthropic.local.ts              # gitignored Console key; Metro bundles it
 
   types/                            # cross-cutting TypeScript interfaces
 ```
@@ -99,6 +106,13 @@ Mode Select, Client, and Tool are modes. Settings, Reports, report details, and 
 - Settings stack Back is linear: report details → Reports list → Settings → Client.
 - Create Report is a separate entry from **Stop Recording**. **Save Report** navigates to Reports; **Back** without Save discards the capture.
 - **Share PDF** lives on report details only. Domain builds HTML (and an inline session SVG from `plotPpmSamples`); `services/report` writes a cache PDF and opens the OS share sheet. The screen does not import PDF libraries.
+- **Analyze Report** lives on report details only. `app/App.tsx` owns `useReportAnalysis` (same pattern as Share PDF). Domain builds the few-shot library + session payload; `services/ai` calls Anthropic Haiku. The result is in-memory for that details visit (not stored on `SavedReport`). The Tool scenario id is not on BLE and not in the API payload.
+
+## Leak scenarios and Analyze
+
+- **Waveforms** live in `domain/telemetry/leakScenarios.ts` (`ppmAtTick`). Tool Mode picks a labeled scenario (default pinpoint). Cloud hunt climbs then **holds** the plateau; other scenarios still loop every 60s — record those for under a minute.
+- **Library copy** (`signature`, `guidance`) is what Analyze sends to the model, not an answer key.
+- **API key:** `src/config/anthropic.local.ts` is gitignored. Copy `anthropic.local.example.ts`, paste a Console `sk-ant-…` key (not Claude Pro), reload Metro / rebuild. Empty key → Analyze does not call the network.
 
 ## BLE-specific conventions
 
@@ -113,7 +127,7 @@ Mode Select, Client, and Tool are modes. Settings, Reports, report details, and 
 |-------|-----------|---------|
 | `domain/` | Unit tests, no mocks | none |
 | `services/` | Unit tests with mocked native modules | BLE libs |
-| `app/` | RNTL navigation / overlay tests (Settings, Create Report, Save) | hooks / storage |
+| `app/` | RNTL navigation / overlay tests (Settings, Create Report, Save, Analyze leftover error) | hooks / storage / fetch |
 | `features/*/hooks/` | Hook tests optional; prefer testing via domain + services | services |
 | `features/*/screens/` | RNTL smoke / interaction tests | hooks |
 | `regressions/` | Session bug regressions (UUID, MTU, encoding, reconnect) | minimal |
