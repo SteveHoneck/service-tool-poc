@@ -12,6 +12,12 @@ import {
   lastPpm,
   reportListLabel,
 } from '../../../domain/report/buildSavedReport';
+import {
+  AnalysisResult,
+  MIN_ANALYZE_SAMPLES,
+  canAnalyzeReport,
+} from '../../../domain/report/buildAnalysisRequest';
+import { LEAK_SCENARIOS } from '../../../domain/telemetry/leakScenarios';
 import { SavedReport } from '../../../types';
 import { BackLink } from '../../shared/BackLink';
 import { SessionPpmChart } from '../components/SessionPpmChart';
@@ -22,6 +28,20 @@ interface Props {
   onSharePdf?: () => void;
   sharing?: boolean;
   shareError?: string | null;
+  onAnalyze?: () => void;
+  analyzing?: boolean;
+  analysis?: AnalysisResult | null;
+  analysisError?: string | null;
+}
+
+function analysisMatchLabel(result: AnalysisResult): string {
+  if (result.matchId === 'none') {
+    return 'No match';
+  }
+  return (
+    LEAK_SCENARIOS.find(scenario => scenario.id === result.matchId)?.name ??
+    result.matchId
+  );
 }
 
 export default function ReportDetailsScreen({
@@ -30,8 +50,14 @@ export default function ReportDetailsScreen({
   onSharePdf,
   sharing = false,
   shareError,
+  onAnalyze,
+  analyzing = false,
+  analysis,
+  analysisError,
 }: Props) {
   const isDark = useColorScheme() === 'dark';
+  const canAnalyze = canAnalyzeReport(report);
+  const analyzeDisabled = !canAnalyze || analyzing;
 
   return (
     <SafeAreaView
@@ -104,6 +130,105 @@ export default function ReportDetailsScreen({
         <View style={[styles.card, isDark && styles.cardDark]}>
           <SessionPpmChart samples={report.ppmSamples} isDark={isDark} />
         </View>
+
+        <Pressable
+          testID="report-details-analyze"
+          accessibilityRole="button"
+          accessibilityLabel="Analyze Report"
+          disabled={analyzeDisabled}
+          onPress={onAnalyze}
+          style={[
+            styles.shareButton,
+            analyzeDisabled && styles.shareButtonDisabled,
+          ]}
+        >
+          <Text style={styles.shareButtonText}>
+            {analyzing ? 'Analyzing…' : 'Analyze Report'}
+          </Text>
+        </Pressable>
+        {!canAnalyze ? (
+          <Text
+            testID="report-details-analyze-hint"
+            style={[styles.shareError, isDark && styles.textMuted]}
+          >
+            Need at least {MIN_ANALYZE_SAMPLES} samples to analyze.
+          </Text>
+        ) : null}
+        {analysisError ? (
+          <Text
+            testID="report-details-analysis-error"
+            style={[styles.shareError, isDark && styles.textMuted]}
+          >
+            {analysisError}
+          </Text>
+        ) : null}
+        {analysis ? (
+          <View
+            testID="report-details-analysis"
+            style={[styles.card, isDark && styles.cardDark]}
+          >
+            <Text
+              testID="report-details-analysis-prototype"
+              style={[
+                styles.prototypeBadge,
+                isDark && styles.prototypeBadgeDark,
+              ]}
+            >
+              Prototype
+            </Text>
+            <Text
+              style={[
+                styles.label,
+                styles.firstLabel,
+                isDark && styles.textMuted,
+              ]}
+            >
+              Match
+            </Text>
+            <Text
+              testID="report-details-analysis-match"
+              style={[styles.body, isDark && styles.textLight]}
+            >
+              {analysisMatchLabel(analysis)} ({analysis.confidence})
+            </Text>
+            <Text style={[styles.label, isDark && styles.textMuted]}>Why</Text>
+            <Text
+              testID="report-details-analysis-why"
+              style={[styles.body, isDark && styles.textLight]}
+            >
+              {analysis.why}
+            </Text>
+            <Text style={[styles.label, isDark && styles.textMuted]}>
+              Pattern
+            </Text>
+            <Text
+              testID="report-details-analysis-pattern"
+              style={[styles.body, isDark && styles.textLight]}
+            >
+              {analysis.pattern}
+            </Text>
+            <Text style={[styles.label, isDark && styles.textMuted]}>
+              Next steps
+            </Text>
+            <Text
+              testID="report-details-analysis-next-steps"
+              style={[styles.body, isDark && styles.textLight]}
+            >
+              {analysis.nextSteps
+                .map((step, index) => `${index + 1}. ${step}`)
+                .join('\n')}
+            </Text>
+            <Text style={[styles.label, isDark && styles.textMuted]}>
+              Cannot conclude
+            </Text>
+            <Text
+              testID="report-details-analysis-cannot"
+              style={[styles.body, isDark && styles.textLight]}
+            >
+              {analysis.cannotConclude.map(item => `• ${item}`).join('\n')}
+            </Text>
+          </View>
+        ) : null}
 
         <Pressable
           testID="report-details-share-pdf"
@@ -206,5 +331,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: '#B91C1C',
+  },
+  prototypeBadge: {
+    alignSelf: 'flex-start',
+    overflow: 'hidden',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: '#1D4ED8',
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  prototypeBadgeDark: {
+    color: '#93C5FD',
+    backgroundColor: '#1E3A8A',
   },
 });

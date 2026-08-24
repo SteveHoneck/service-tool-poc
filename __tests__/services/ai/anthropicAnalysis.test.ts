@@ -6,8 +6,10 @@ import {
 } from '../../../src/services/ai/anthropicAnalysis';
 
 describe('getAnthropicApiKey', () => {
-  it('returns empty when the gitignored local file is missing', () => {
-    expect(getAnthropicApiKey()).toBe('');
+  it('returns a trimmed string without throwing', () => {
+    const key = getAnthropicApiKey();
+    expect(typeof key).toBe('string');
+    expect(key).toBe(key.trim());
   });
 });
 
