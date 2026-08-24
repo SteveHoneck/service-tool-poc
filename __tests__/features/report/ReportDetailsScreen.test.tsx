@@ -185,7 +185,7 @@ describe('ReportDetailsScreen', () => {
 
   const analysis: AnalysisResult = {
     matchId: 'pinpoint',
-    confidence: 'high',
+    confidence: '0.72',
     why: 'One peak at 18s.',
     pattern: 'Pinpoint-style peak then decay.',
     nextSteps: ['Re-sweep the peak', 'Soap-test the joint'],
@@ -246,6 +246,38 @@ describe('ReportDetailsScreen', () => {
     expect(onAnalyze).not.toHaveBeenCalled();
   });
 
+  it('disables Analyze Report after a result is shown', async () => {
+    const onAnalyze = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        onAnalyze={onAnalyze}
+        analysis={analysis}
+      />,
+    );
+    const user = userEvent.setup();
+    const button = screen.getByTestId('report-details-analyze');
+
+    expect(button).toBeDisabled();
+    await user.press(button);
+    expect(onAnalyze).not.toHaveBeenCalled();
+  });
+
+  it('spaces the analysis card below Analyze Report', async () => {
+    await render(
+      <ReportDetailsScreen
+        report={longReport}
+        onBack={jest.fn()}
+        analysis={analysis}
+      />,
+    );
+
+    expect(screen.getByTestId('report-details-analysis')).toHaveStyle({
+      marginTop: 12,
+    });
+  });
+
   it('shows prototype analysis cards when a result is set', async () => {
     await render(
       <ReportDetailsScreen
@@ -260,10 +292,7 @@ describe('ReportDetailsScreen', () => {
     ).toHaveTextContent('Prototype');
     expect(
       screen.getByTestId('report-details-analysis-match'),
-    ).toHaveTextContent(/Pinpoint/);
-    expect(
-      screen.getByTestId('report-details-analysis-match'),
-    ).toHaveTextContent(/high/);
+    ).toHaveTextContent('Pinpoint (72% confident)');
     expect(screen.getByTestId('report-details-analysis-why')).toHaveTextContent(
       'One peak at 18s.',
     );

@@ -44,6 +44,16 @@ function analysisMatchLabel(result: AnalysisResult): string {
   );
 }
 
+function analysisMatchLine(result: AnalysisResult): string {
+  const type = analysisMatchLabel(result);
+  const value = Number(result.confidence);
+  if (!Number.isFinite(value)) {
+    return `${type} (${result.confidence})`;
+  }
+  const percent = value <= 1 ? value * 100 : value;
+  return `${type} (${Math.round(percent)}% confident)`;
+}
+
 export default function ReportDetailsScreen({
   report,
   onBack,
@@ -57,7 +67,7 @@ export default function ReportDetailsScreen({
 }: Props) {
   const isDark = useColorScheme() === 'dark';
   const canAnalyze = canAnalyzeReport(report);
-  const analyzeDisabled = !canAnalyze || analyzing;
+  const analyzeDisabled = !canAnalyze || analyzing || Boolean(analysis);
 
   return (
     <SafeAreaView
@@ -165,7 +175,7 @@ export default function ReportDetailsScreen({
         {analysis ? (
           <View
             testID="report-details-analysis"
-            style={[styles.card, isDark && styles.cardDark]}
+            style={[styles.card, styles.analysisCard, isDark && styles.cardDark]}
           >
             <Text
               testID="report-details-analysis-prototype"
@@ -189,7 +199,7 @@ export default function ReportDetailsScreen({
               testID="report-details-analysis-match"
               style={[styles.body, isDark && styles.textLight]}
             >
-              {analysisMatchLabel(analysis)} ({analysis.confidence})
+              {analysisMatchLine(analysis)}
             </Text>
             <Text style={[styles.label, isDark && styles.textMuted]}>Why</Text>
             <Text
@@ -290,6 +300,9 @@ const styles = StyleSheet.create({
   cardDark: {
     backgroundColor: '#1F2937',
     borderColor: '#374151',
+  },
+  analysisCard: {
+    marginTop: 12,
   },
   label: {
     fontSize: 13,
