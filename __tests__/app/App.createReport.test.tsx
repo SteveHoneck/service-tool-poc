@@ -6,6 +6,8 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generatePDF } from 'react-native-html-to-pdf';
+import Share from 'react-native-share';
 import App from '../../src/app/App';
 import { SessionCapture } from '../../src/types';
 
@@ -49,6 +51,8 @@ describe('App create report navigation', () => {
 
   beforeEach(() => {
     memory.clear();
+    (generatePDF as jest.Mock).mockClear();
+    (Share.open as jest.Mock).mockClear();
     (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) =>
       Promise.resolve(memory.get(key) ?? null),
     );
@@ -142,5 +146,32 @@ describe('App create report navigation', () => {
     await user.press(screen.getByTestId('report-details-back'));
     expect(screen.getByTestId('reports-list-screen')).toBeOnTheScreen();
     expect(screen.getByText('Leak check')).toBeOnTheScreen();
+  });
+
+  it('shares a PDF from report details', async () => {
+    const user = await openCreateReport();
+
+    await user.type(screen.getByTestId('create-report-job-name'), 'Leak check');
+    await user.press(screen.getByTestId('create-report-save'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Leak check')).toBeOnTheScreen();
+    });
+
+    await user.press(screen.getByText('Leak check'));
+    await user.press(screen.getByTestId('report-details-share-pdf'));
+
+    await waitFor(() => {
+      expect(generatePDF).toHaveBeenCalled();
+    });
+    const options = (generatePDF as jest.Mock).mock.calls[0][0];
+    expect(options.html).toContain('Leak check');
+    expect(options.fileName).toBe('Leak-check');
+    expect(Share.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'application/pdf',
+        failOnCancel: false,
+      }),
+    );
   });
 });

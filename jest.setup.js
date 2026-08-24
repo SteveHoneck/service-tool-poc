@@ -70,6 +70,19 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
+jest.mock('react-native-html-to-pdf', () => ({
+  generatePDF: jest.fn(() =>
+    Promise.resolve({ filePath: '/cache/report.pdf' }),
+  ),
+}));
+
+jest.mock('react-native-share', () => ({
+  __esModule: true,
+  default: {
+    open: jest.fn(() => Promise.resolve({ success: true, message: 'OK' })),
+  },
+}));
+
 jest.mock('react-native-svg', () => {
   const React = require('react');
   const { View } = require('react-native');

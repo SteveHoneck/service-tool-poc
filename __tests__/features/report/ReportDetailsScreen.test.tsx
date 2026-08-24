@@ -25,6 +25,7 @@ describe('ReportDetailsScreen', () => {
     );
 
     expect(screen.getByTestId('report-details-screen')).toBeOnTheScreen();
+    expect(screen.getByTestId('report-details-scroll')).toBeOnTheScreen();
     expect(screen.getByText('Report Details')).toBeOnTheScreen();
     expect(screen.getByText('Job name')).toBeOnTheScreen();
     expect(screen.getByTestId('report-details-job-name')).toHaveTextContent(
@@ -121,5 +122,53 @@ describe('ReportDetailsScreen', () => {
 
     await user.press(screen.getByTestId('report-details-back'));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onSharePdf when Share PDF is pressed', async () => {
+    const onSharePdf = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={namedReport}
+        onBack={jest.fn()}
+        onSharePdf={onSharePdf}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.press(screen.getByTestId('report-details-share-pdf'));
+    expect(onSharePdf).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables Share PDF while sharing', async () => {
+    const onSharePdf = jest.fn();
+    await render(
+      <ReportDetailsScreen
+        report={namedReport}
+        onBack={jest.fn()}
+        onSharePdf={onSharePdf}
+        sharing
+      />,
+    );
+    const user = userEvent.setup();
+    const button = screen.getByTestId('report-details-share-pdf');
+
+    expect(button).toBeDisabled();
+    await user.press(button);
+    expect(onSharePdf).not.toHaveBeenCalled();
+  });
+
+  it('shows a share error when shareError is set', async () => {
+    await render(
+      <ReportDetailsScreen
+        report={namedReport}
+        onBack={jest.fn()}
+        onSharePdf={jest.fn()}
+        shareError="Could not create PDF"
+      />,
+    );
+
+    expect(screen.getByTestId('report-details-share-error')).toHaveTextContent(
+      'Could not create PDF',
+    );
   });
 });

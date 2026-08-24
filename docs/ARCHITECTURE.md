@@ -44,7 +44,7 @@ src/
     report/
       screens/                      # CreateReport, ReportsList, ReportDetails
       components/                   # SessionPpmChart
-      hooks/                        # useSavedReports
+      hooks/                        # useSavedReports, useShareReportPdf
     shared/                         # BackLink (UI used by multiple features)
 
   domain/
@@ -53,7 +53,7 @@ src/
     device/                         # UUID helpers, firmware compatibility
     signals/                        # RSSI → strength, PPM math
     session/                        # recording capture / gaps (pure)
-    report/                         # buildSavedReport, list label, lastPpm, plotPpmSamples (pure)
+    report/                         # buildSavedReport, PDF HTML/SVG, plotPpmSamples (pure)
 
   services/
     ble/
@@ -65,6 +65,8 @@ src/
     storage/
       deviceStorage.ts              # last connected device id
       reportStorage.ts              # AsyncStorage saved-report list
+    report/
+      reportPdf.ts                  # html-to-pdf generate + share sheet (cache file)
 
   types/                            # cross-cutting TypeScript interfaces
 ```
@@ -96,6 +98,7 @@ Mode Select, Client, and Tool are modes. Settings, Reports, report details, and 
 
 - Settings stack Back is linear: report details → Reports list → Settings → Client.
 - Create Report is a separate entry from **Stop Recording**. **Save Report** navigates to Reports; **Back** without Save discards the capture.
+- **Share PDF** lives on report details only. Domain builds HTML (and an inline session SVG from `plotPpmSamples`); `services/report` writes a cache PDF and opens the OS share sheet. The screen does not import PDF libraries.
 
 ## BLE-specific conventions
 

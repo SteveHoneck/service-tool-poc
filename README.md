@@ -10,6 +10,7 @@ Proof-of-concept React Native app demonstrating BLE connection management betwee
 - Firmware version read from Device Information Service (DIS) with compatibility badge
 - Record a PPM session, enter Create Report (job, operator, last/MAX PPM), and **Save Report** to a local list
 - Settings stack (gear → Settings → Reports) without dropping the BLE connection
+- Share a saved report as a basic PDF from Report Details (OS share sheet, not mailto)
 
 ## Quick start
 
@@ -29,7 +30,7 @@ Requires a physical Android device with USB debugging enabled. BLE does not work
    - Firmware badge shows `1.2.0 — Compatible`
    - **Record** → **Stop Recording** opens **Create Report** (sample count, last PPM, MAX, job name, operator)
    - **Save Report** writes the session and opens the **Reports** list; **Back** without Save discards
-   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for **Report Details** (job name, operator, notes, last/max reading, session graph)
+   - Gear → **Settings** → **Reports** shows the same list; tap a saved row for **Report Details** (job name, operator, notes, last/max reading, session graph). **Share PDF** opens the OS share sheet; **Print** is a valid check
    - Back walks details → Reports → Settings → Client (BLE stays up)
 3. **Reconnection test** — Toggle Bluetooth off on the Tool phone
    - Client shows **Reconnecting…** with attempt count
@@ -56,7 +57,7 @@ Single app, two modes — implemented with **feature modules + layered MVVM** (n
 | **Presentation** | `features/*/screens`, `components` | UI, styles, display formatting |
 | **Application** | `features/*/hooks` | Screen state, orchestration |
 | **Domain** | `domain/` | Pure rules: telemetry parse, reconnect policy, signal math, recording, saved reports |
-| **Infrastructure** | `services/` | BLE adapters, permissions, storage |
+| **Infrastructure** | `services/` | BLE adapters, permissions, storage, PDF generate/share |
 
 **Full specification:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
@@ -85,7 +86,7 @@ src/
     client/               Client Mode, Settings, recording orchestration
     tool/                 Tool Mode screens, hooks
     mode-select/          Mode picker screen
-    report/               Create Report, Reports list, report details, session chart
+    report/               Create Report, Reports list, report details, session chart, Share PDF
     shared/               Shared UI (BackLink)
   domain/
     telemetry/            Parse/serialize, wire format
@@ -93,10 +94,11 @@ src/
     device/               UUID helpers, firmware compatibility
     signals/              RSSI → strength, PPM math
     session/              Recording capture / gaps
-    report/               Build saved report, list label, last PPM, plot points
+    report/               Build saved report, list label, last PPM, plot points, PDF HTML/SVG
   services/
     ble/                  Central/peripheral adapters, scan, constants
     storage/              Last device id, saved-report list
+    report/               HTML-to-PDF generate + share sheet
   types/                  Shared TypeScript interfaces
 
 __tests__/                Mirrors domain/, services/, features/, app/
@@ -117,7 +119,6 @@ docs/
 
 ## Backlog
 
-- **PDF** — basic PDF + share sheet from a saved report (not mailto attachment)
 - **Settings stretch** — instrument name, Disconnect, firmware OTA, location, sound
 - **NFC bootstrap** — NTAG213 sticker with NDEF pairing payload
 - **WiFi Direct** — `react-native-wifi-p2p` (Android) / Multipeer (iOS)
