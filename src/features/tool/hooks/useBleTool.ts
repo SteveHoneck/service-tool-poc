@@ -1,15 +1,15 @@
-import {useCallback, useEffect, useRef, useState} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  MockPpmPulseState,
-  advanceMockPpmPulse,
-  createMockPpmPulse,
-  telemetryFromPulse,
-} from '../../../domain/telemetry/mock';
-import {encodeTelemetryBase64} from '../../../domain/telemetry/serialize';
-import {BlePeripheralService} from '../../../services/ble/BlePeripheralService';
-import {TELEMETRY_INTERVAL_MS} from '../../../services/ble/constants';
-import {requestToolPermissions} from '../../../services/ble/permissions';
-import {TelemetryPayload} from '../../../types';
+  LeakScenarioId,
+  advanceScenarioTick,
+  createScenarioTick,
+  telemetryFromScenario,
+} from '../../../domain/telemetry/leakScenarios';
+import { encodeTelemetryBase64 } from '../../../domain/telemetry/serialize';
+import { BlePeripheralService } from '../../../services/ble/BlePeripheralService';
+import { TELEMETRY_INTERVAL_MS } from '../../../services/ble/constants';
+import { requestToolPermissions } from '../../../services/ble/permissions';
+import { TelemetryPayload } from '../../../types';
 
 type ToolState = 'idle' | 'starting' | 'advertising' | 'connected' | 'error';
 
@@ -20,7 +20,8 @@ export function useBleTool() {
   const startStreamingRef = useRef<() => void>(() => {});
   const stopStreamingRef = useRef<() => void>(() => {});
   const advertisingStartedRef = useRef(false);
-  const pulseRef = useRef<MockPpmPulseState | null>(null);
+  const scenarioRef = useRef(createScenarioTick('pinpoint'));
+  const [scenarioId, setScenarioId] = useState<LeakScenarioId>('pinpoint');
   const [toolState, setToolState] = useState<ToolState>('idle');
   const [connectedCentrals, setConnectedCentrals] = useState(0);
   const [lastTelemetry, setLastTelemetry] = useState<TelemetryPayload | null>(
@@ -29,10 +30,14 @@ export function useBleTool() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const nextMockPayload = useCallback((): TelemetryPayload => {
-    pulseRef.current = pulseRef.current
-      ? advanceMockPpmPulse(pulseRef.current)
-      : createMockPpmPulse();
-    return telemetryFromPulse(pulseRef.current);
+    const payload = telemetryFromScenario(scenarioRef.current);
+    scenarioRef.current = advanceScenarioTick(scenarioRef.current);
+    return payload;
+  }, []);
+
+  const selectScenario = useCallback((id: LeakScenarioId) => {
+    scenarioRef.current = createScenarioTick(id);
+    setScenarioId(id);
   }, []);
 
   const stopStreaming = useCallback(() => {
@@ -69,7 +74,7 @@ export function useBleTool() {
 
   const resetAdvertisingSession = useCallback(async () => {
     advertisingStartedRef.current = false;
-    pulseRef.current = null;
+    scenarioRef.current = createScenarioTick(scenarioRef.current.scenarioId);
     stopStreamingRef.current();
     serviceRef.current.stopAdvertising();
     await serviceRef.current.resetSession();
@@ -153,9 +158,7 @@ export function useBleTool() {
       setupGattProfile();
       service.setDeviceName();
 
-      await service.startAdvertising(
-        () => advertisingStartedRef.current,
-      );
+      await service.startAdvertising(() => advertisingStartedRef.current);
 
       if (!advertisingStartedRef.current) {
         setToolState('advertising');
@@ -179,7 +182,9 @@ export function useBleTool() {
     connectedCentrals,
     lastTelemetry,
     errorMessage,
+    scenarioId,
     startTool,
     stopTool,
+    selectScenario,
   };
 }
