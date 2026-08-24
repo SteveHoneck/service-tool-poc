@@ -21,6 +21,7 @@ export interface ReportAnalysisState {
 
 export interface ReportAnalysisActions {
   analyze: (report: SavedReport) => Promise<void>;
+  clear: () => void;
 }
 
 const MISSING_KEY_MESSAGE =
@@ -86,5 +87,11 @@ export function useReportAnalysis(): {
     }
   }, []);
 
-  return { state: { analyzing, error, result }, actions: { analyze } };
+  const clear = useCallback(() => {
+    setAnalyzing(false);
+    setError(null);
+    setResult(null);
+  }, []);
+
+  return { state: { analyzing, error, result }, actions: { analyze, clear } };
 }

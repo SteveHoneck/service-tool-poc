@@ -89,6 +89,7 @@ function App() {
             if (!exists) {
               return;
             }
+            reportAnalysisActions.clear();
             setSelectedReportId(reportId);
             setScreen('report-details');
           }}
@@ -97,7 +98,10 @@ function App() {
       {screen === 'report-details' && selectedReport && (
         <ReportDetailsScreen
           report={selectedReport}
-          onBack={() => setScreen('reports')}
+          onBack={() => {
+            reportAnalysisActions.clear();
+            setScreen('reports');
+          }}
           onSharePdf={() => {
             void sharePdfActions.share(selectedReport);
           }}

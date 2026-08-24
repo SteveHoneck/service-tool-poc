@@ -122,4 +122,22 @@ describe('useReportAnalysis', () => {
     expect(result.current.state.error).toMatch(/parse/i);
     expect(result.current.state.result).toBeNull();
   });
+
+  it('clears error and result when clear is called', async () => {
+    analyzeReportMock.mockResolvedValue({ ok: true, text: 'not json' });
+    const { result } = await renderHook(() => useReportAnalysis());
+
+    await act(async () => {
+      await result.current.actions.analyze(reportWithSamples(20));
+    });
+    expect(result.current.state.error).toMatch(/parse/i);
+
+    await act(() => {
+      result.current.actions.clear();
+    });
+
+    expect(result.current.state.error).toBeNull();
+    expect(result.current.state.result).toBeNull();
+    expect(result.current.state.analyzing).toBe(false);
+  });
 });
